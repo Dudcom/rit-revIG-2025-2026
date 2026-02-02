@@ -844,7 +844,7 @@ impl ElfNEhdr {
         println!("ELF file: section header string table index: 0x{:02X}", self.e_shstrndx);
         println!();
 
-
+        // program header parsing
         if self.class == ElfClass::CLASS32 {
             let mut program_headers: Vec<Elf32_Phdr> = Vec::new();
             let mut offset = self.e_phoff as usize;
@@ -853,6 +853,9 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
+                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
+                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
+                }
             }
         } else if self.class == ElfClass::CLASS64 {
             let mut program_headers: Vec<Elf64_Phdr> = Vec::new();
@@ -862,9 +865,14 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
+                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
+                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
+                }
             }
         }
 
+
+        // section header parsing
         if self.class == ElfClass::CLASS32 {
             let mut section_headers: Vec<Elf32_Shdr> = Vec::new();
             let mut offset = self.e_shoff as usize;
@@ -872,7 +880,7 @@ impl ElfNEhdr {
                 let shdr = Elf32_Shdr::read_bytes(file_bytes, offset);
                 shdr.print(i, file_bytes);
                 section_headers.push(shdr);
-                offset += self.e_shentsize as usize;
+                offset += self.e_shentsize as usize;d
             }
         } else if self.class == ElfClass::CLASS64 {
             let mut section_headers: Vec<Elf64_Shdr> = Vec::new();
