@@ -16,140 +16,452 @@ pub type ElfNSXWord = i64;
 pub type ElfNXWord = u64;
 
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfFileType {
-    NONE = 0,
-    REL = 1,
-    EXEC = 2,
-    DYN = 3,
-    CORE = 4,
-    LOOS = 0xfe00,
-    HISOS = 0xfeff,
-    LOPROC = 0xff00,
-    HIPROC = 0xffff,
+    NONE,
+    REL,
+    EXEC,
+    DYN,
+    CORE,
+    LOOS,
+    HISOS,
+    LOPROC,
+    HIPROC,
+    Unknown(u16),
 }
 
+impl ElfFileType {
+    pub fn from_raw(v: u16) -> Self {
+        match v {
+            0 => ElfFileType::NONE,
+            1 => ElfFileType::REL,
+            2 => ElfFileType::EXEC,
+            3 => ElfFileType::DYN,
+            4 => ElfFileType::CORE,
+            x if (0xfe00..=0xfeff).contains(&x) => ElfFileType::LOOS,
+            x if (0xff00..=0xffff).contains(&x) => ElfFileType::LOPROC,
+            x => ElfFileType::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfFileType::NONE => "No file type",
+            ElfFileType::REL => "Relocatable file",
+            ElfFileType::EXEC => "Executable file",
+            ElfFileType::DYN => "Shared object file",
+            ElfFileType::CORE => "Core file",
+            ElfFileType::LOOS => "Operating system-specific",
+            ElfFileType::HISOS => "Operating system-specific",
+            ElfFileType::LOPROC | ElfFileType::HIPROC => "Processor-specific",
+            ElfFileType::Unknown(_) => "Unknown",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfClass {
-    NONE = 0,
-    CLASS32 = 1,
-    CLASS64 = 2,
+    NONE,
+    CLASS32,
+    CLASS64,
+    Unknown(u8),
 }
 
+impl ElfClass {
+    pub fn from_raw(v: u8) -> Self {
+        match v {
+            0 => ElfClass::NONE,
+            1 => ElfClass::CLASS32,
+            2 => ElfClass::CLASS64,
+            x => ElfClass::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfClass::NONE => "Invalid Class",
+            ElfClass::CLASS32 => "32-bit",
+            ElfClass::CLASS64 => "64-bit",
+            ElfClass::Unknown(_) => "Invalid Class",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfData {
-    NONE = 0,
-    DATA2LSB = 1,
-    DATA2MSB = 2,
+    NONE,
+    DATA2LSB,
+    DATA2MSB,
+    Unknown(u8),
 }
 
+impl ElfData {
+    pub fn from_raw(v: u8) -> Self {
+        match v {
+            0 => ElfData::NONE,
+            1 => ElfData::DATA2LSB,
+            2 => ElfData::DATA2MSB,
+            x => ElfData::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfData::NONE => "Invalid Data Encoding",
+            ElfData::DATA2LSB => "Little Endian",
+            ElfData::DATA2MSB => "Big Endian",
+            ElfData::Unknown(_) => "Invalid Data Encoding",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfVersion {
-    NONE = 0,
-    CURRENT = 1,
+    NONE,
+    CURRENT,
+    Unknown(u8),
 }
 
+impl ElfVersion {
+    pub fn from_raw(v: u8) -> Self {
+        match v {
+            0 => ElfVersion::NONE,
+            1 => ElfVersion::CURRENT,
+            x => ElfVersion::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfVersion::NONE => "Invalid Version",
+            ElfVersion::CURRENT => "Current",
+            ElfVersion::Unknown(_) => "Invalid Version",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfOSABI {
-    NONE = 0,
-    HPUX = 1,
-    NETBSD = 2,
-    LINUX = 3,
-    SOLARIS = 6,
-    AIX = 7,
-    IRIX = 8,
-    FREEBSD = 9,
-    TRU64 = 10,
-    MODESTO = 11,
-    OPENBSD = 12,
-    OPENVMS = 13,
-    NSK = 14,
-    ARM = 97,
-    STANDALONE = 255,
+    NONE,
+    HPUX,
+    NETBSD,
+    LINUX,
+    SOLARIS,
+    AIX,
+    IRIX,
+    FREEBSD,
+    TRU64,
+    MODESTO,
+    OPENBSD,
+    OPENVMS,
+    NSK,
+    ARM,
+    STANDALONE,
+    Unknown(u8),
 }
 
+impl ElfOSABI {
+    pub fn from_raw(v: u8) -> Self {
+        match v {
+            0 => ElfOSABI::NONE,
+            1 => ElfOSABI::HPUX,
+            2 => ElfOSABI::NETBSD,
+            3 => ElfOSABI::LINUX,
+            6 => ElfOSABI::SOLARIS,
+            7 => ElfOSABI::AIX,
+            8 => ElfOSABI::IRIX,
+            9 => ElfOSABI::FREEBSD,
+            10 => ElfOSABI::TRU64,
+            11 => ElfOSABI::MODESTO,
+            12 => ElfOSABI::OPENBSD,
+            13 => ElfOSABI::OPENVMS,
+            14 => ElfOSABI::NSK,
+            97 => ElfOSABI::ARM,
+            255 => ElfOSABI::STANDALONE,
+            x => ElfOSABI::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfOSABI::NONE => "No extensions or unspecified",
+            ElfOSABI::HPUX => "Hewlett-Packard HP-UX",
+            ElfOSABI::NETBSD => "NetBSD",
+            ElfOSABI::LINUX => "Linux",
+            ElfOSABI::SOLARIS => "Sun Solaris",
+            ElfOSABI::AIX => "AIX",
+            ElfOSABI::IRIX => "IRIX",
+            ElfOSABI::FREEBSD => "FreeBSD",
+            ElfOSABI::TRU64 => "TRU64 UNIX",
+            ElfOSABI::MODESTO => "Novell Modesto",
+            ElfOSABI::OPENBSD => "Open BSD",
+            ElfOSABI::OPENVMS => "Open VMS",
+            ElfOSABI::NSK => "Hewlett-Packard Non-Stop Kernel",
+            ElfOSABI::ARM => "ARM architecture",
+            ElfOSABI::STANDALONE => "Stand-alone (embedded)",
+            ElfOSABI::Unknown(_) => "Unknown",
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+#[allow(non_camel_case_types)]
 pub enum EMMachine {
-    EM_NONE = 0,      // No machine
-    EM_M32 = 1,       // AT&T WE 32100
-    EM_SPARC = 2,     // SPARC
-    EM_386 = 3,       // Intel 80386
-    EM_68K = 4,       // Motorola 68000
-    EM_88K = 5,       // Motorola 88000
-    // 6 reserved (was EM_486)
-    EM_860 = 7,       // Intel 80860
-    EM_MIPS = 8,      // MIPS I Architecture
-    EM_S370 = 9,      // IBM System/370 Processor
-    EM_MIPS_RS3_LE = 10,  // MIPS RS3000 Little-endian
-    // 11-14 reserved
-    EM_PARISC = 15,   // Hewlett-Packard PA-RISC
-    // 16 reserved
-    EM_VPP500 = 17,   // Fujitsu VPP500
-    EM_SPARC32PLUS = 18, // Enhanced instruction set SPARC
-    EM_960 = 19,      // Intel 80960
-    EM_PPC = 20,      // PowerPC
-    EM_PPC64 = 21,    // 64-bit PowerPC
-    EM_S390 = 22,     // IBM System/390 Processor
-    // 23-35 reserved
-    EM_V800 = 36,     // NEC V800
-    EM_FR20 = 37,     // Fujitsu FR20
-    EM_RH32 = 38,     // TRW RH-32
-    EM_RCE = 39,      // Motorola RCE
-    EM_ARM = 40,      // Advanced RISC Machines ARM
-    EM_ALPHA = 41,    // Digital Alpha
-    EM_SH = 42,       // Hitachi SH
-    EM_SPARCV9 = 43,  // SPARC Version 9
-    EM_TRICORE = 44,  // Siemens TriCore embedded processor
-    EM_ARC = 45,      // Argonaut RISC Core
-    EM_H8_300 = 46,   // Hitachi H8/300
-    EM_H8_300H = 47,  // Hitachi H8/300H
-    EM_H8S = 48,      // Hitachi H8S
-    EM_H8_500 = 49,   // Hitachi H8/500
-    EM_IA_64 = 50,    // Intel IA-64 processor architecture
-    EM_MIPS_X = 51,   // Stanford MIPS-X
-    EM_COLDFIRE = 52, // Motorola ColdFire
-    EM_68HC12 = 53,   // Motorola M68HC12
-    EM_MMA = 54,      // Fujitsu MMA Multimedia Accelerator
-    EM_PCP = 55,      // Siemens PCP
-    EM_NCPU = 56,     // Sony nCPU embedded RISC processor
-    EM_NDR1 = 57,     // Denso NDR1 microprocessor
-    EM_STARCORE = 58, // Motorola Star*Core processor
-    EM_ME16 = 59,     // Toyota ME16 processor
-    EM_ST100 = 60,    // STMicroelectronics ST100 processor
-    EM_TINYJ = 61,    // Advanced Logic Corp. TinyJ processor family
-    EM_X86_64 = 62,   // AMD x86-64 architecture
-    EM_PDSP = 63,     // Sony DSP Processor
-    EM_PDP10 = 64,    // Digital Equipment Corp. PDP-10
-    EM_PDP11 = 65,    // Digital Equipment Corp. PDP-11
-    EM_FX66 = 66,     // Siemens FX66 microcontroller
-    EM_ST9PLUS = 67,  // STMicroelectronics ST9+ 8/16 bit microcontroller
-    EM_ST7 = 68,      // STMicroelectronics ST7 8-bit microcontroller
-    EM_68HC16 = 69,   // Motorola MC68HC16 Microcontroller
-    EM_68HC11 = 70,   // Motorola MC68HC11 Microcontroller
-    EM_68HC08 = 71,   // Motorola MC68HC08 Microcontroller
-    EM_68HC05 = 72,   // Motorola MC68HC05 Microcontroller
-    EM_SVX = 73,      // Silicon Graphics SVx
-    EM_ST19 = 74,     // STMicroelectronics ST19 8-bit microcontroller
-    EM_VAX = 75,      // Digital VAX
-    EM_CRIS = 76,     // Axis Communications 32-bit embedded processor
-    EM_JAVELIN = 77,  // Infineon Technologies 32-bit embedded processor
-    EM_FIREPATH = 78, // Element 14 64-bit DSP Processor
-    EM_ZSP = 79,      // LSI Logic 16-bit DSP Processor
-    EM_MMIX = 80,     // Donald Knuth's educational 64-bit processor
-    EM_HUANY = 81,    // Harvard University object files
-    EM_PRISM = 82,    // SiTera Prism
-    EM_AVR = 83,      // Atmel AVR 8-bit microcontroller
-    EM_FR30 = 84,     // Fujitsu FR30
-    EM_D10V = 85,     // Mitsubishi D10V
-    EM_D30V = 86,     // Mitsubishi D30V
-    EM_V850 = 87,     // NEC v850
-    EM_M32R = 88,     // Mitsubishi M32R
-    EM_MN10300 = 89,  // Matsushita MN10300
-    EM_MN10200 = 90,  // Matsushita MN10200
-    EM_PJ = 91,       // picoJava
-    EM_OPENRISC = 92, // OpenRISC 32-bit embedded processor
-    EM_ARC_A5 = 93,   // ARC Cores Tangent-A5
-    EM_XTENSA = 94,   // Tensilica Xtensa Architecture
-    EM_VIDEOCORE = 95,// Alphamosaic VideoCore processor
-    EM_TMM_GPP = 96,  // Thompson Multimedia General Purpose Processor
-    EM_NS32K = 97,    // National Semiconductor 32000 series
-    EM_TPC = 98,      // Tenor Network TPC processor
-    EM_SNP1K = 99,    // Trebia SNP 1000 processor
-    EM_ST200 = 100,   // STMicroelectronics ST200 microcontroller
+    EM_NONE,
+    EM_M32,
+    EM_SPARC,
+    EM_386,
+    EM_68K,
+    EM_88K,
+    EM_860,
+    EM_MIPS,
+    EM_S370,
+    EM_MIPS_RS3_LE,
+    EM_PARISC,
+    EM_VPP500,
+    EM_SPARC32PLUS,
+    EM_960,
+    EM_PPC,
+    EM_PPC64,
+    EM_S390,
+    EM_V800,
+    EM_FR20,
+    EM_RH32,
+    EM_RCE,
+    EM_ARM,
+    EM_ALPHA,
+    EM_SH,
+    EM_SPARCV9,
+    EM_TRICORE,
+    EM_ARC,
+    EM_H8_300,
+    EM_H8_300H,
+    EM_H8S,
+    EM_H8_500,
+    EM_IA_64,
+    EM_MIPS_X,
+    EM_COLDFIRE,
+    EM_68HC12,
+    EM_MMA,
+    EM_PCP,
+    EM_NCPU,
+    EM_NDR1,
+    EM_STARCORE,
+    EM_ME16,
+    EM_ST100,
+    EM_TINYJ,
+    EM_X86_64,
+    EM_PDSP,
+    EM_PDP10,
+    EM_PDP11,
+    EM_FX66,
+    EM_ST9PLUS,
+    EM_ST7,
+    EM_68HC16,
+    EM_68HC11,
+    EM_68HC08,
+    EM_68HC05,
+    EM_SVX,
+    EM_ST19,
+    EM_VAX,
+    EM_CRIS,
+    EM_JAVELIN,
+    EM_FIREPATH,
+    EM_ZSP,
+    EM_MMIX,
+    EM_HUANY,
+    EM_PRISM,
+    EM_AVR,
+    EM_FR30,
+    EM_D10V,
+    EM_D30V,
+    EM_V850,
+    EM_M32R,
+    EM_MN10300,
+    EM_MN10200,
+    EM_PJ,
+    EM_OPENRISC,
+    EM_ARC_A5,
+    EM_XTENSA,
+    EM_VIDEOCORE,
+    EM_TMM_GPP,
+    EM_NS32K,
+    EM_TPC,
+    EM_SNP1K,
+    EM_ST200,
+    Unknown(u16),
+}
+
+impl EMMachine {
+    pub fn from_raw(v: u16) -> Self {
+        match v {
+            0 => EMMachine::EM_NONE,
+            1 => EMMachine::EM_M32,
+            2 => EMMachine::EM_SPARC,
+            3 => EMMachine::EM_386,
+            4 => EMMachine::EM_68K,
+            5 => EMMachine::EM_88K,
+            7 => EMMachine::EM_860,
+            8 => EMMachine::EM_MIPS,
+            9 => EMMachine::EM_S370,
+            10 => EMMachine::EM_MIPS_RS3_LE,
+            15 => EMMachine::EM_PARISC,
+            17 => EMMachine::EM_VPP500,
+            18 => EMMachine::EM_SPARC32PLUS,
+            19 => EMMachine::EM_960,
+            20 => EMMachine::EM_PPC,
+            21 => EMMachine::EM_PPC64,
+            22 => EMMachine::EM_S390,
+            36 => EMMachine::EM_V800,
+            37 => EMMachine::EM_FR20,
+            38 => EMMachine::EM_RH32,
+            39 => EMMachine::EM_RCE,
+            40 => EMMachine::EM_ARM,
+            41 => EMMachine::EM_ALPHA,
+            42 => EMMachine::EM_SH,
+            43 => EMMachine::EM_SPARCV9,
+            44 => EMMachine::EM_TRICORE,
+            45 => EMMachine::EM_ARC,
+            46 => EMMachine::EM_H8_300,
+            47 => EMMachine::EM_H8_300H,
+            48 => EMMachine::EM_H8S,
+            49 => EMMachine::EM_H8_500,
+            50 => EMMachine::EM_IA_64,
+            51 => EMMachine::EM_MIPS_X,
+            52 => EMMachine::EM_COLDFIRE,
+            53 => EMMachine::EM_68HC12,
+            54 => EMMachine::EM_MMA,
+            55 => EMMachine::EM_PCP,
+            56 => EMMachine::EM_NCPU,
+            57 => EMMachine::EM_NDR1,
+            58 => EMMachine::EM_STARCORE,
+            59 => EMMachine::EM_ME16,
+            60 => EMMachine::EM_ST100,
+            61 => EMMachine::EM_TINYJ,
+            62 => EMMachine::EM_X86_64,
+            63 => EMMachine::EM_PDSP,
+            64 => EMMachine::EM_PDP10,
+            65 => EMMachine::EM_PDP11,
+            66 => EMMachine::EM_FX66,
+            67 => EMMachine::EM_ST9PLUS,
+            68 => EMMachine::EM_ST7,
+            69 => EMMachine::EM_68HC16,
+            70 => EMMachine::EM_68HC11,
+            71 => EMMachine::EM_68HC08,
+            72 => EMMachine::EM_68HC05,
+            73 => EMMachine::EM_SVX,
+            74 => EMMachine::EM_ST19,
+            75 => EMMachine::EM_VAX,
+            76 => EMMachine::EM_CRIS,
+            77 => EMMachine::EM_JAVELIN,
+            78 => EMMachine::EM_FIREPATH,
+            79 => EMMachine::EM_ZSP,
+            80 => EMMachine::EM_MMIX,
+            81 => EMMachine::EM_HUANY,
+            82 => EMMachine::EM_PRISM,
+            83 => EMMachine::EM_AVR,
+            84 => EMMachine::EM_FR30,
+            85 => EMMachine::EM_D10V,
+            86 => EMMachine::EM_D30V,
+            87 => EMMachine::EM_V850,
+            88 => EMMachine::EM_M32R,
+            89 => EMMachine::EM_MN10300,
+            90 => EMMachine::EM_MN10200,
+            91 => EMMachine::EM_PJ,
+            92 => EMMachine::EM_OPENRISC,
+            93 => EMMachine::EM_ARC_A5,
+            94 => EMMachine::EM_XTENSA,
+            95 => EMMachine::EM_VIDEOCORE,
+            96 => EMMachine::EM_TMM_GPP,
+            97 => EMMachine::EM_NS32K,
+            98 => EMMachine::EM_TPC,
+            99 => EMMachine::EM_SNP1K,
+            100 => EMMachine::EM_ST200,
+            x => EMMachine::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            EMMachine::EM_NONE => "None",
+            EMMachine::EM_M32 => "AT&T WE 32100",
+            EMMachine::EM_SPARC => "SPARC",
+            EMMachine::EM_386 => "Intel 80386",
+            EMMachine::EM_68K => "Motorola 68000",
+            EMMachine::EM_88K => "Motorola 88000",
+            EMMachine::EM_860 => "Intel 80860",
+            EMMachine::EM_MIPS => "MIPS I Architecture",
+            EMMachine::EM_S370 => "IBM System/370 Processor",
+            EMMachine::EM_MIPS_RS3_LE => "MIPS RS3000 Little-endian",
+            EMMachine::EM_PARISC => "Hewlett-Packard PA-RISC",
+            EMMachine::EM_VPP500 => "Fujitsu VPP500",
+            EMMachine::EM_SPARC32PLUS => "Enhanced instruction set SPARC",
+            EMMachine::EM_960 => "Intel 80960",
+            EMMachine::EM_PPC => "PowerPC",
+            EMMachine::EM_PPC64 => "64-bit PowerPC",
+            EMMachine::EM_S390 => "IBM System/390 Processor",
+            EMMachine::EM_V800 => "NEC V800",
+            EMMachine::EM_FR20 => "Fujitsu FR20",
+            EMMachine::EM_RH32 => "TRW RH-32",
+            EMMachine::EM_RCE => "Motorola RCE",
+            EMMachine::EM_ARM => "Advanced RISC Machines ARM",
+            EMMachine::EM_ALPHA => "Digital Alpha",
+            EMMachine::EM_SH => "Hitachi SH",
+            EMMachine::EM_SPARCV9 => "SPARC Version 9",
+            EMMachine::EM_TRICORE => "Siemens TriCore embedded processor",
+            EMMachine::EM_ARC => "Argonaut RISC Core",
+            EMMachine::EM_H8_300 => "Hitachi H8/300",
+            EMMachine::EM_H8_300H => "Hitachi H8/300H",
+            EMMachine::EM_H8S => "Hitachi H8S",
+            EMMachine::EM_H8_500 => "Hitachi H8/500",
+            EMMachine::EM_IA_64 => "Intel IA-64 processor architecture",
+            EMMachine::EM_MIPS_X => "Stanford MIPS-X",
+            EMMachine::EM_COLDFIRE => "Motorola ColdFire",
+            EMMachine::EM_68HC12 => "Motorola M68HC12",
+            EMMachine::EM_MMA => "Fujitsu MMA Multimedia Accelerator",
+            EMMachine::EM_PCP => "Siemens PCP",
+            EMMachine::EM_NCPU => "Sony nCPU embedded RISC processor",
+            EMMachine::EM_NDR1 => "Denso NDR1 microprocessor",
+            EMMachine::EM_STARCORE => "Motorola Star*Core processor",
+            EMMachine::EM_ME16 => "Toyota ME16 processor",
+            EMMachine::EM_ST100 => "STMicroelectronics ST100 processor",
+            EMMachine::EM_TINYJ => "Advanced Logic Corp. TinyJ processor family",
+            EMMachine::EM_X86_64 => "AMD x86-64 architecture",
+            EMMachine::EM_PDSP => "Sony DSP Processor",
+            EMMachine::EM_PDP10 => "Digital Equipment Corp. PDP-10",
+            EMMachine::EM_PDP11 => "Digital Equipment Corp. PDP-11",
+            EMMachine::EM_FX66 => "Siemens FX66 microcontroller",
+            EMMachine::EM_ST9PLUS => "STMicroelectronics ST9+ 8/16 bit microcontroller",
+            EMMachine::EM_ST7 => "STMicroelectronics ST7 8-bit microcontroller",
+            EMMachine::EM_68HC16 => "Motorola MC68HC16 Microcontroller",
+            EMMachine::EM_68HC11 => "Motorola MC68HC11 Microcontroller",
+            EMMachine::EM_68HC08 => "Motorola MC68HC08 Microcontroller",
+            EMMachine::EM_68HC05 => "Motorola MC68HC05 Microcontroller",
+            EMMachine::EM_SVX => "Silicon Graphics SVx",
+            EMMachine::EM_ST19 => "STMicroelectronics ST19 8-bit microcontroller",
+            EMMachine::EM_VAX => "Digital VAX",
+            EMMachine::EM_CRIS => "Axis Communications 32-bit embedded processor",
+            EMMachine::EM_JAVELIN => "Infineon Technologies 32-bit embedded processor",
+            EMMachine::EM_FIREPATH => "Element 14 64-bit DSP Processor",
+            EMMachine::EM_ZSP => "LSI Logic 16-bit DSP Processor",
+            EMMachine::EM_MMIX => "Donald Knuth's educational 64-bit processor",
+            EMMachine::EM_HUANY => "Harvard University object files",
+            EMMachine::EM_PRISM => "SiTera Prism",
+            EMMachine::EM_AVR => "Atmel AVR 8-bit microcontroller",
+            EMMachine::EM_FR30 => "Fujitsu FR30",
+            EMMachine::EM_D10V => "Mitsubishi D10V",
+            EMMachine::EM_D30V => "Mitsubishi D30V",
+            EMMachine::EM_V850 => "NEC v850",
+            EMMachine::EM_M32R => "Mitsubishi M32R",
+            EMMachine::EM_MN10300 => "Matsushita MN10300",
+            EMMachine::EM_MN10200 => "Matsushita MN10200",
+            EMMachine::EM_PJ => "picoJava",
+            EMMachine::EM_OPENRISC => "OpenRISC 32-bit embedded processor",
+            EMMachine::EM_ARC_A5 => "ARC Cores Tangent-A5",
+            EMMachine::EM_XTENSA => "Tensilica Xtensa Architecture",
+            EMMachine::EM_VIDEOCORE => "Alphamosaic VideoCore processor",
+            EMMachine::EM_TMM_GPP => "Thompson Multimedia General Purpose Processor",
+            EMMachine::EM_NS32K => "National Semiconductor 32000 series",
+            EMMachine::EM_TPC => "Tenor Network TPC processor",
+            EMMachine::EM_SNP1K => "Trebia SNP 1000 processor",
+            EMMachine::EM_ST200 => "STMicroelectronics ST200 microcontroller",
+            EMMachine::Unknown(_) => "Invalid Machine Type",
+        }
+    }
 }
 
 
@@ -189,11 +501,15 @@ pub enum ElfFlagsARM {
 
 pub const EI_NIDENT: usize = 16;
 
-pub struct ElfNEhdr{
+pub struct ElfNEhdr {
     pub e_ident: [u8; EI_NIDENT],
-    pub e_type: u16,
-    pub e_machine: u16,
-    pub e_version: u32,
+    pub class: ElfClass,
+    pub data: ElfData,
+    pub version_ident: ElfVersion,
+    pub osabi: ElfOSABI,
+    pub e_type: ElfFileType,
+    pub e_machine: EMMachine,
+    pub e_version: ElfVersion,
     pub e_entry: ElfNAddr,
     pub e_phoff: ElfNOff,
     pub e_shoff: ElfNOff,
@@ -208,7 +524,7 @@ pub struct ElfNEhdr{
 
 
 pub struct Elf32_Phdr {
-    pub p_type: u32,
+    pub p_type: ElfPhdrType,
     pub p_offset: ElfNOff,
     pub p_vaddr: ElfNAddr,
     pub p_paddr: ElfNAddr,
@@ -219,7 +535,7 @@ pub struct Elf32_Phdr {
 }
 
 pub struct Elf64_Phdr {
-    pub p_type: u32,
+    pub p_type: ElfPhdrType,
     pub p_flags: u32,
     pub p_offset: ElfNOff,
     pub p_vaddr: ElfNAddr,
@@ -230,25 +546,98 @@ pub struct Elf64_Phdr {
 }
 
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum ElfPhdrType {
-    PT_NULL = 0,
-    PT_LOAD = 1,
-    PT_DYNAMIC = 2,
-    PT_INTERP = 3,
-    PT_NOTE = 4,
-    PT_SHLIB = 5,
-    PT_PHDR = 6,
-    PT_TLS = 7,
-    PT_NUM = 8,
-    PT_LOOS = 0x60000000,
-    PT_GNU_EH_FRAME = 0x6474e550,
-    PT_GNU_STACK = 0x6474e551,
-    PT_GNU_RELRO = 0x6474e552,
-    PT_LOSUNW = 0x6ffffffa,
-    PT_SUNWSTACK = 0x6ffffffb,
-    PT_HISUNW = 0x6fffffff,
-    PT_LOPROC = 0x70000000,
-    PT_HIPROC = 0x7fffffff,
+    PT_NULL,
+    PT_LOAD,
+    PT_DYNAMIC,
+    PT_INTERP,
+    PT_NOTE,
+    PT_SHLIB,
+    PT_PHDR,
+    PT_TLS,
+    PT_NUM,
+    PT_LOOS,
+    PT_GNU_EH_FRAME,
+    PT_GNU_STACK,
+    PT_GNU_RELRO,
+    PT_LOSUNW,
+    PT_SUNWSTACK,
+    PT_HISUNW,
+    PT_LOPROC,
+    PT_HIPROC,
+    Unknown(u32),
+}
+
+impl ElfPhdrType {
+    pub fn from_raw(v: u32) -> Self {
+        match v {
+            0 => ElfPhdrType::PT_NULL,
+            1 => ElfPhdrType::PT_LOAD,
+            2 => ElfPhdrType::PT_DYNAMIC,
+            3 => ElfPhdrType::PT_INTERP,
+            4 => ElfPhdrType::PT_NOTE,
+            5 => ElfPhdrType::PT_SHLIB,
+            6 => ElfPhdrType::PT_PHDR,
+            7 => ElfPhdrType::PT_TLS,
+            8 => ElfPhdrType::PT_NUM,
+            0x6474e550 => ElfPhdrType::PT_GNU_EH_FRAME,
+            0x6474e551 => ElfPhdrType::PT_GNU_STACK,
+            0x6474e552 => ElfPhdrType::PT_GNU_RELRO,
+            0x6ffffffa => ElfPhdrType::PT_LOSUNW,
+            0x6ffffffb => ElfPhdrType::PT_SUNWSTACK,
+            0x6fffffff => ElfPhdrType::PT_HISUNW,
+            x if (0x60000000..0x6fffffff).contains(&x) => ElfPhdrType::PT_LOOS,
+            x if (0x70000000..=0x7fffffff).contains(&x) => ElfPhdrType::PT_LOPROC,
+            x => ElfPhdrType::Unknown(x),
+        }
+    }
+    pub fn as_raw(&self) -> u32 {
+        match self {
+            ElfPhdrType::PT_NULL => 0,
+            ElfPhdrType::PT_LOAD => 1,
+            ElfPhdrType::PT_DYNAMIC => 2,
+            ElfPhdrType::PT_INTERP => 3,
+            ElfPhdrType::PT_NOTE => 4,
+            ElfPhdrType::PT_SHLIB => 5,
+            ElfPhdrType::PT_PHDR => 6,
+            ElfPhdrType::PT_TLS => 7,
+            ElfPhdrType::PT_NUM => 8,
+            ElfPhdrType::PT_GNU_EH_FRAME => 0x6474e550,
+            ElfPhdrType::PT_GNU_STACK => 0x6474e551,
+            ElfPhdrType::PT_GNU_RELRO => 0x6474e552,
+            ElfPhdrType::PT_LOOS => 0x60000000,
+            ElfPhdrType::PT_LOSUNW => 0x6ffffffa,
+            ElfPhdrType::PT_SUNWSTACK => 0x6ffffffb,
+            ElfPhdrType::PT_HISUNW => 0x6fffffff,
+            ElfPhdrType::PT_LOPROC => 0x70000000,
+            ElfPhdrType::PT_HIPROC => 0x7fffffff,
+            ElfPhdrType::Unknown(x) => *x,
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfPhdrType::PT_NULL => "PT_NULL",
+            ElfPhdrType::PT_LOAD => "PT_LOAD",
+            ElfPhdrType::PT_DYNAMIC => "PT_DYNAMIC",
+            ElfPhdrType::PT_INTERP => "PT_INTERP",
+            ElfPhdrType::PT_NOTE => "PT_NOTE",
+            ElfPhdrType::PT_SHLIB => "PT_SHLIB",
+            ElfPhdrType::PT_PHDR => "PT_PHDR",
+            ElfPhdrType::PT_TLS => "PT_TLS",
+            ElfPhdrType::PT_NUM => "PT_NUM",
+            ElfPhdrType::PT_GNU_EH_FRAME => "PT_GNU_EH_FRAME",
+            ElfPhdrType::PT_GNU_STACK => "PT_GNU_STACK",
+            ElfPhdrType::PT_GNU_RELRO => "PT_GNU_RELRO",
+            ElfPhdrType::PT_LOOS => "PT_LOOS (OS-specific)",
+            ElfPhdrType::PT_LOSUNW => "PT_LOSUNW",
+            ElfPhdrType::PT_SUNWSTACK => "PT_SUNWSTACK",
+            ElfPhdrType::PT_HISUNW => "PT_HISUNW",
+            ElfPhdrType::PT_LOPROC => "PT_LOPROC (Processor-specific)",
+            ElfPhdrType::PT_HIPROC => "PT_HIPROC",
+            ElfPhdrType::Unknown(_) => "PT_UNKNOWN",
+        }
+    }
 }
 
 // #define        PT_NULL                0                /* Program header table entry unused */
@@ -277,64 +666,39 @@ pub enum ElfPhdrType {
 impl ElfNEhdr {
 
     fn validate_elf_header(&self) {
-        if self.e_ident[0] != 0x7F || 
-           self.e_ident[1] != 0x45 || 
-           self.e_ident[2] != 0x4C || 
+        if self.e_ident[0] != 0x7F ||
+           self.e_ident[1] != 0x45 ||
+           self.e_ident[2] != 0x4C ||
            self.e_ident[3] != 0x46 {
-            println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}", 
+            println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
                      self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]);
             panic!("Not an ELF file: Invalid Magic Number");
         }
-        println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}", 
+        println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
                  self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]);
 
-        match self.e_ident[4] {
-            0 => panic!("Not an ELF file: Invalid Class"),
-            1 => println!("ELF file: Class: 32-bit"),
-            2 => println!("ELF file: Class: 64-bit"),
-            _ => panic!("Not an ELF file: Invalid Class"),
+        match self.class {
+            ElfClass::NONE | ElfClass::Unknown(_) => panic!("Not an ELF file: Invalid Class"),
+            ElfClass::CLASS32 => println!("ELF file: Class: 32-bit"),
+            ElfClass::CLASS64 => println!("ELF file: Class: 64-bit"),
         }
 
-        match self.e_ident[5] {
-            0 => panic!("Not an ELF file: Invalid Data Encoding"),
-            1 => println!("ELF file: Data Encoding: Little Endian"),
-            2 => println!("ELF file: Data Encoding: Big Endian"),
-            _ => panic!("Not an ELF file: Invalid Data Encoding"),
+        match self.data {
+            ElfData::NONE | ElfData::Unknown(_) => panic!("Not an ELF file: Invalid Data Encoding"),
+            ElfData::DATA2LSB => println!("ELF file: Data Encoding: Little Endian"),
+            ElfData::DATA2MSB => println!("ELF file: Data Encoding: Big Endian"),
         }
 
-        match self.e_ident[6] {
-            0 => panic!("Not an ELF file: Invalid Version"),
-            1 => println!("ELF file: Version: Current"),
-            _ => panic!("Not an ELF file: Invalid Version"),
+        match self.version_ident {
+            ElfVersion::NONE | ElfVersion::Unknown(_) => panic!("Not an ELF file: Invalid Version"),
+            ElfVersion::CURRENT => println!("ELF file: Version: Current"),
         }
 
-        match self.e_ident[7] {
-            0 => println!("ELF file: OS ABI: No extensions or unspecified"),
-            1 => println!("ELF file: OS ABI: Hewlett-Packard HP-UX"),
-            2 => println!("ELF file: OS ABI: NetBSD"),
-            3 => println!("ELF file: OS ABI: Linux"),
-            6 => println!("ELF file: OS ABI: Sun Solaris"),
-            7 => println!("ELF file: OS ABI: AIX"),
-            8 => println!("ELF file: OS ABI: IRIX"),
-            9 => println!("ELF file: OS ABI: FreeBSD"),
-            10 => println!("ELF file: OS ABI: TRU64 UNIX"),
-            11 => println!("ELF file: OS ABI: Novell Modesto"),
-            12 => println!("ELF file: OS ABI: Open BSD"),
-            13 => println!("ELF file: OS ABI: Open VMS"),
-            14 => println!("ELF file: OS ABI: Hewlett-Packard Non-Stop Kernel"),
-            97 => println!("ELF file: OS ABI: ARM architecture"),
-            255 => println!("ELF file: OS ABI: Stand-alone (embedded)"),
-            x if x >= 0x40 && x < 0xFF => println!("ELF file: OS ABI: Architecture-specific value range"),
-            _ => panic!("Not an ELF file: Invalid OS ABI"),
-        }
-
-        match self.e_ident[8] {
-            0 => println!("ELF file: ABI Version: None/Unspecified"),
-            x => println!("ELF file: ABI Version: {}", x),
-        }
+        println!("ELF file: OS ABI: {}", self.osabi.type_name());
+        println!("ELF file: ABI Version: {}", self.e_ident[8]);
 
         for i in 0..8 {
-            if self.e_ident[i+8] != 0x00 {
+            if self.e_ident[i + 8] != 0x00 {
                 panic!("Not an ELF file: Invalid Padding");
             }
         }
@@ -344,113 +708,20 @@ impl ElfNEhdr {
 
 
     fn validate_elf_type(&self) {
-        match self.e_type {
-            0 => println!("ELF file: Type: No file type"),
-            1 => println!("ELF file: Type: Relocatable file"),
-            2 => println!("ELF file: Type: Executable file"),
-            3 => println!("ELF file: Type: Shared object file"),
-            4 => println!("ELF file: Type: Core file"),
-            x if x >= 0xfe00 && x <= 0xfeff => println!("ELF file: Type: Operating system-specific"),
-            x if x >= 0xff00 && x <= 0xffff => println!("ELF file: Type: Processor-specific"),
-            _ => println!("ELF file: Type: Unknown"),
-        }
+        println!("ELF file: Type: {}", self.e_type.type_name());
     }
 
-
-    
     fn validate_elf_machine(&self) {
         match self.e_machine {
-            0 => println!("ELF file: Machine: None"),
-            1 => println!("ELF file: Machine: AT&T WE 32100"),
-            2 => println!("ELF file: Machine: SPARC"),
-            3 => println!("ELF file: Machine: Intel 80386"),
-            4 => println!("ELF file: Machine: Motorola 68000"),
-            5 => println!("ELF file: Machine: Motorola 88000"),
-            7 => println!("ELF file: Machine: Intel 80860"),
-            8 => println!("ELF file: Machine: MIPS I Architecture"),
-            9 => println!("ELF file: Machine: IBM System/370 Processor"),
-            10 => println!("ELF file: Machine: MIPS RS3000 Little-endian"),
-            15 => println!("ELF file: Machine: Hewlett-Packard PA-RISC"),
-            17 => println!("ELF file: Machine: Fujitsu VPP500"),
-            18 => println!("ELF file: Machine: Enhanced instruction set SPARC"),
-            19 => println!("ELF file: Machine: Intel 80960"),
-            20 => println!("ELF file: Machine: PowerPC"),
-            21 => println!("ELF file: Machine: 64-bit PowerPC"),
-            22 => println!("ELF file: Machine: IBM System/390 Processor"),
-            36 => println!("ELF file: Machine: NEC V800"),
-            37 => println!("ELF file: Machine: Fujitsu FR20"),
-            38 => println!("ELF file: Machine: TRW RH-32"),
-            39 => println!("ELF file: Machine: Motorola RCE"),
-            40 => println!("ELF file: Machine: Advanced RISC Machines ARM"),
-            41 => println!("ELF file: Machine: Digital Alpha"),
-            42 => println!("ELF file: Machine: Hitachi SH"),
-            43 => println!("ELF file: Machine: SPARC Version 9"),
-            44 => println!("ELF file: Machine: Siemens TriCore embedded processor"),
-            45 => println!("ELF file: Machine: Argonaut RISC Core"),
-            46 => println!("ELF file: Machine: Hitachi H8/300"),
-            47 => println!("ELF file: Machine: Hitachi H8/300H"),
-            48 => println!("ELF file: Machine: Hitachi H8S"),
-            49 => println!("ELF file: Machine: Hitachi H8/500"),
-            50 => println!("ELF file: Machine: Intel IA-64 processor architecture"),
-            51 => println!("ELF file: Machine: Stanford MIPS-X"),
-            52 => println!("ELF file: Machine: Motorola ColdFire"),
-            53 => println!("ELF file: Machine: Motorola M68HC12"),
-            54 => println!("ELF file: Machine: Fujitsu MMA Multimedia Accelerator"),
-            55 => println!("ELF file: Machine: Siemens PCP"),
-            56 => println!("ELF file: Machine: Sony nCPU embedded RISC processor"),
-            57 => println!("ELF file: Machine: Denso NDR1 microprocessor"),
-            58 => println!("ELF file: Machine: Motorola Star*Core processor"),
-            59 => println!("ELF file: Machine: Toyota ME16 processor"),
-            60 => println!("ELF file: Machine: STMicroelectronics ST100 processor"),
-            61 => println!("ELF file: Machine: Advanced Logic Corp. TinyJ processor family"),
-            62 => println!("ELF file: Machine: AMD x86-64 architecture"),
-            63 => println!("ELF file: Machine: Sony DSP Processor"),
-            64 => println!("ELF file: Machine: Digital Equipment Corp. PDP-10"),
-            65 => println!("ELF file: Machine: Digital Equipment Corp. PDP-11"),
-            66 => println!("ELF file: Machine: Siemens FX66 microcontroller"),
-            67 => println!("ELF file: Machine: STMicroelectronics ST9+ 8/16 bit microcontroller"),
-            68 => println!("ELF file: Machine: STMicroelectronics ST7 8-bit microcontroller"),
-            69 => println!("ELF file: Machine: Motorola MC68HC16 Microcontroller"),
-            70 => println!("ELF file: Machine: Motorola MC68HC11 Microcontroller"),
-            71 => println!("ELF file: Machine: Motorola MC68HC08 Microcontroller"),
-            72 => println!("ELF file: Machine: Motorola MC68HC05 Microcontroller"),
-            73 => println!("ELF file: Machine: Silicon Graphics SVx"),
-            74 => println!("ELF file: Machine: STMicroelectronics ST19 8-bit microcontroller"),
-            75 => println!("ELF file: Machine: Digital VAX"),
-            76 => println!("ELF file: Machine: Axis Communications 32-bit embedded processor"),
-            77 => println!("ELF file: Machine: Infineon Technologies 32-bit embedded processor"),
-            78 => println!("ELF file: Machine: Element 14 64-bit DSP Processor"),
-            79 => println!("ELF file: Machine: LSI Logic 16-bit DSP Processor"),
-            80 => println!("ELF file: Machine: Donald Knuth's educational 64-bit processor"),
-            81 => println!("ELF file: Machine: Harvard University object files"),
-            82 => println!("ELF file: Machine: SiTera Prism"),
-            83 => println!("ELF file: Machine: Atmel AVR 8-bit microcontroller"),
-            84 => println!("ELF file: Machine: Fujitsu FR30"),
-            85 => println!("ELF file: Machine: Mitsubishi D10V"),
-            86 => println!("ELF file: Machine: Mitsubishi D30V"),
-            87 => println!("ELF file: Machine: NEC v850"),
-            88 => println!("ELF file: Machine: Mitsubishi M32R"),
-            89 => println!("ELF file: Machine: Matsushita MN10300"),
-            90 => println!("ELF file: Machine: Matsushita MN10200"),
-            91 => println!("ELF file: Machine: picoJava"),
-            92 => println!("ELF file: Machine: OpenRISC 32-bit embedded processor"),
-            93 => println!("ELF file: Machine: ARC Cores Tangent-A5"),
-            94 => println!("ELF file: Machine: Tensilica Xtensa Architecture"),
-            95 => println!("ELF file: Machine: Alphamosaic VideoCore processor"),
-            96 => println!("ELF file: Machine: Thompson Multimedia General Purpose Processor"),
-            97 => println!("ELF file: Machine: National Semiconductor 32000 series"),
-            98 => println!("ELF file: Machine: Tenor Network TPC processor"),
-            99 => println!("ELF file: Machine: Trebia SNP 1000 processor"),
-            100 => println!("ELF file: Machine: STMicroelectronics ST200 microcontroller"),
-            _ => panic!("Not an ELF file: Invalid Machine Type"),
+            EMMachine::Unknown(_) => panic!("Not an ELF file: Invalid Machine Type"),
+            _ => println!("ELF file: Machine: {}", self.e_machine.type_name()),
         }
     }
 
     fn validate_elf_version(&self) {
         match self.e_version {
-            0 => println!("ELF file: Version: None"),
-            1 => println!("ELF file: Version: Current"),
-            _ => panic!("Not an ELF file: Invalid Version"),
+            ElfVersion::NONE | ElfVersion::Unknown(_) => panic!("Not an ELF file: Invalid Version"),
+            ElfVersion::CURRENT => println!("ELF file: Version: Current"),
         }
     }
 
@@ -510,9 +781,13 @@ impl ElfNEhdr {
     pub fn new() -> Self {
         Self {
             e_ident: [0; EI_NIDENT],
-            e_type: 0,
-            e_machine: 0,
-            e_version: 0,
+            class: ElfClass::NONE,
+            data: ElfData::NONE,
+            version_ident: ElfVersion::NONE,
+            osabi: ElfOSABI::NONE,
+            e_type: ElfFileType::NONE,
+            e_machine: EMMachine::EM_NONE,
+            e_version: ElfVersion::NONE,
             e_entry: 0,
             e_phoff: 0,
             e_shoff: 0,
@@ -526,22 +801,29 @@ impl ElfNEhdr {
         }
     }
 
-    pub fn read_bytes(&mut self,bytes: &[u8]) ->  Self {
+    pub fn read_bytes(&mut self, bytes: &[u8]) -> Self {
+        let e_type_raw = u16::from_le_bytes(bytes[EI_NIDENT..EI_NIDENT + 2].try_into().unwrap());
+        let e_machine_raw = u16::from_le_bytes(bytes[EI_NIDENT + 2..EI_NIDENT + 4].try_into().unwrap());
+        let e_version_raw = u32::from_le_bytes(bytes[EI_NIDENT + 4..EI_NIDENT + 8].try_into().unwrap());
         Self {
             e_ident: bytes[0..EI_NIDENT].try_into().unwrap(),
-            e_type: u16::from_le_bytes(bytes[EI_NIDENT..EI_NIDENT+2].try_into().unwrap()),
-            e_machine: u16::from_le_bytes(bytes[EI_NIDENT+2..EI_NIDENT+4].try_into().unwrap()),
-            e_version: u32::from_le_bytes(bytes[EI_NIDENT+4..EI_NIDENT+8].try_into().unwrap()),
-            e_entry: ElfNAddr::from_le_bytes(bytes[EI_NIDENT+8..EI_NIDENT+16].try_into().unwrap()), // 64 bit -  need to read in 8 bytes  
-            e_phoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT+16..EI_NIDENT+24].try_into().unwrap()), // 64 bit
-            e_shoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT+24..EI_NIDENT+32].try_into().unwrap()),
-            e_flags: u32::from_le_bytes(bytes[EI_NIDENT+32..EI_NIDENT+36].try_into().unwrap()),
-            e_ehsize: u16::from_le_bytes(bytes[EI_NIDENT+36..EI_NIDENT+38].try_into().unwrap()),
-            e_phentsize: u16::from_le_bytes(bytes[EI_NIDENT+38..EI_NIDENT+40].try_into().unwrap()),
-            e_phnum: u16::from_le_bytes(bytes[EI_NIDENT+40..EI_NIDENT+42].try_into().unwrap()),
-            e_shentsize: u16::from_le_bytes(bytes[EI_NIDENT+42..EI_NIDENT+44].try_into().unwrap()),
-            e_shnum: u16::from_le_bytes(bytes[EI_NIDENT+44..EI_NIDENT+46].try_into().unwrap()),
-            e_shstrndx: u16::from_le_bytes(bytes[EI_NIDENT+46..EI_NIDENT+48].try_into().unwrap()),
+            class: ElfClass::from_raw(bytes[4]),
+            data: ElfData::from_raw(bytes[5]),
+            version_ident: ElfVersion::from_raw(bytes[6]),
+            osabi: ElfOSABI::from_raw(bytes[7]),
+            e_type: ElfFileType::from_raw(e_type_raw),
+            e_machine: EMMachine::from_raw(e_machine_raw),
+            e_version: ElfVersion::from_raw((e_version_raw & 0xff) as u8),
+            e_entry: ElfNAddr::from_le_bytes(bytes[EI_NIDENT + 8..EI_NIDENT + 16].try_into().unwrap()),
+            e_phoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT + 16..EI_NIDENT + 24].try_into().unwrap()),
+            e_shoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT + 24..EI_NIDENT + 32].try_into().unwrap()),
+            e_flags: u32::from_le_bytes(bytes[EI_NIDENT + 32..EI_NIDENT + 36].try_into().unwrap()),
+            e_ehsize: u16::from_le_bytes(bytes[EI_NIDENT + 36..EI_NIDENT + 38].try_into().unwrap()),
+            e_phentsize: u16::from_le_bytes(bytes[EI_NIDENT + 38..EI_NIDENT + 40].try_into().unwrap()),
+            e_phnum: u16::from_le_bytes(bytes[EI_NIDENT + 40..EI_NIDENT + 42].try_into().unwrap()),
+            e_shentsize: u16::from_le_bytes(bytes[EI_NIDENT + 42..EI_NIDENT + 44].try_into().unwrap()),
+            e_shnum: u16::from_le_bytes(bytes[EI_NIDENT + 44..EI_NIDENT + 46].try_into().unwrap()),
+            e_shstrndx: u16::from_le_bytes(bytes[EI_NIDENT + 46..EI_NIDENT + 48].try_into().unwrap()),
         }
     }
 
@@ -563,8 +845,7 @@ impl ElfNEhdr {
         println!();
 
 
-        // program header parsing
-        if self.e_ident[4] == 1 {
+        if self.class == ElfClass::CLASS32 {
             let mut program_headers: Vec<Elf32_Phdr> = Vec::new();
             let mut offset = self.e_phoff as usize;
             for i in 0..self.e_phnum as usize {
@@ -573,7 +854,7 @@ impl ElfNEhdr {
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
             }
-        } else if self.e_ident[4] == 2 {
+        } else if self.class == ElfClass::CLASS64 {
             let mut program_headers: Vec<Elf64_Phdr> = Vec::new();
             let mut offset = self.e_phoff as usize;
             for i in 0..self.e_phnum as usize {
@@ -584,9 +865,7 @@ impl ElfNEhdr {
             }
         }
 
-
-        // program seciton parsing 
-        if self.e_ident[4] == 1 {
+        if self.class == ElfClass::CLASS32 {
             let mut section_headers: Vec<Elf32_Shdr> = Vec::new();
             let mut offset = self.e_shoff as usize;
             for i in 0..self.e_shnum as usize {
@@ -595,7 +874,7 @@ impl ElfNEhdr {
                 section_headers.push(shdr);
                 offset += self.e_shentsize as usize;
             }
-        } else if self.e_ident[4] == 2 {
+        } else if self.class == ElfClass::CLASS64 {
             let mut section_headers: Vec<Elf64_Shdr> = Vec::new();
             let mut offset = self.e_shoff as usize;
             for i in 0..self.e_shnum as usize {

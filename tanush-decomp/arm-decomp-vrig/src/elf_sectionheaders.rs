@@ -5,15 +5,228 @@ pub type Elf64_Addr = u64;
 pub type Elf32_Off = u32;
 pub type Elf64_Off = u64;
 
-// typedef uint32_t Elf32_Addr;
-// typedef uint64_t Elf64_Addr;
-// typedef uint32_t Elf32_Off;
-// typedef uint64_t Elf64_Off;
-// https://sites.uclouvain.be/SystInfo/usr/include/elf.h.html
+#[derive(Clone, Copy, PartialEq)]
+pub enum ElfShdrType {
+    SHT_NULL,
+    SHT_PROGBITS,
+    SHT_SYMTAB,
+    SHT_STRTAB,
+    SHT_RELA,
+    SHT_HASH,
+    SHT_DYNAMIC,
+    SHT_NOTE,
+    SHT_NOBITS,
+    SHT_REL,
+    SHT_SHLIB,
+    SHT_DYNSYM,
+    SHT_INIT_ARRAY,
+    SHT_FINI_ARRAY,
+    SHT_PREINIT_ARRAY,
+    SHT_GROUP,
+    SHT_SYMTAB_SHNDX,
+    SHT_NUM,
+    SHT_GNU_ATTRIBUTES,
+    SHT_GNU_HASH,
+    SHT_GNU_LIBLIST,
+    SHT_CHECKSUM,
+    SHT_SUNW_move,
+    SHT_SUNW_COMDAT,
+    SHT_SUNW_syminfo,
+    SHT_GNU_verdef,
+    SHT_GNU_verneed,
+    SHT_GNU_versym,
+    SHT_MIPS_LIBLIST,
+    SHT_MIPS_MSYM,
+    SHT_MIPS_CONFLICT,
+    SHT_MIPS_GPTAB,
+    SHT_MIPS_UCODE,
+    SHT_MIPS_DEBUG,
+    SHT_MIPS_REGINFO,
+    SHT_MIPS_PACKAGE,
+    SHT_MIPS_PACKSYM,
+    SHT_MIPS_RELD,
+    SHT_MIPS_IFACE,
+    SHT_MIPS_CONTENT,
+    SHT_MIPS_OPTIONS,
+    SHT_MIPS_SHDR,
+    SHT_MIPS_FDESC,
+    SHT_MIPS_EXTSYM,
+    SHT_MIPS_DENSE,
+    SHT_MIPS_PDESC,
+    SHT_MIPS_LOCSYM,
+    SHT_MIPS_AUXSYM,
+    SHT_MIPS_OPTSYM,
+    SHT_MIPS_LOCSTR,
+    SHT_MIPS_LINE,
+    SHT_MIPS_RFDESC,
+    SHT_MIPS_DELTASYM,
+    SHT_MIPS_DELTAINST,
+    SHT_MIPS_DELTACLASS,
+    SHT_MIPS_DWARF,
+    SHT_MIPS_DELTADECL,
+    SHT_MIPS_SYMBOL_LIB,
+    SHT_MIPS_EVENTS,
+    SHT_MIPS_TRANSLATE,
+    SHT_MIPS_PIXIE,
+    SHT_MIPS_XLATE,
+    SHT_MIPS_XLATE_DEBUG,
+    SHT_MIPS_WHIRL,
+    SHT_MIPS_EH_REGION,
+    SHT_MIPS_XLATE_OLD,
+    SHT_MIPS_PDR_EXCEPTION,
+    Unknown(u32),
+}
+
+impl ElfShdrType {
+    pub fn from_raw(v: u32) -> Self {
+        match v {
+            0 => ElfShdrType::SHT_NULL,
+            1 => ElfShdrType::SHT_PROGBITS,
+            2 => ElfShdrType::SHT_SYMTAB,
+            3 => ElfShdrType::SHT_STRTAB,
+            4 => ElfShdrType::SHT_RELA,
+            5 => ElfShdrType::SHT_HASH,
+            6 => ElfShdrType::SHT_DYNAMIC,
+            7 => ElfShdrType::SHT_NOTE,
+            8 => ElfShdrType::SHT_NOBITS,
+            9 => ElfShdrType::SHT_REL,
+            10 => ElfShdrType::SHT_SHLIB,
+            11 => ElfShdrType::SHT_DYNSYM,
+            14 => ElfShdrType::SHT_INIT_ARRAY,
+            15 => ElfShdrType::SHT_FINI_ARRAY,
+            16 => ElfShdrType::SHT_PREINIT_ARRAY,
+            17 => ElfShdrType::SHT_GROUP,
+            18 => ElfShdrType::SHT_SYMTAB_SHNDX,
+            19 => ElfShdrType::SHT_NUM,
+            0x6ffffff5 => ElfShdrType::SHT_GNU_ATTRIBUTES,
+            0x6ffffff6 => ElfShdrType::SHT_GNU_HASH,
+            0x6ffffff7 => ElfShdrType::SHT_GNU_LIBLIST,
+            0x6ffffff8 => ElfShdrType::SHT_CHECKSUM,
+            0x6ffffffa => ElfShdrType::SHT_SUNW_move,
+            0x6ffffffb => ElfShdrType::SHT_SUNW_COMDAT,
+            0x6ffffffc => ElfShdrType::SHT_SUNW_syminfo,
+            0x6ffffffd => ElfShdrType::SHT_GNU_verdef,
+            0x6ffffffe => ElfShdrType::SHT_GNU_verneed,
+            0x6fffffff => ElfShdrType::SHT_GNU_versym,
+            0x70000000 => ElfShdrType::SHT_MIPS_LIBLIST,
+            0x70000001 => ElfShdrType::SHT_MIPS_MSYM,
+            0x70000002 => ElfShdrType::SHT_MIPS_CONFLICT,
+            0x70000003 => ElfShdrType::SHT_MIPS_GPTAB,
+            0x70000004 => ElfShdrType::SHT_MIPS_UCODE,
+            0x70000005 => ElfShdrType::SHT_MIPS_DEBUG,
+            0x70000006 => ElfShdrType::SHT_MIPS_REGINFO,
+            0x70000007 => ElfShdrType::SHT_MIPS_PACKAGE,
+            0x70000008 => ElfShdrType::SHT_MIPS_PACKSYM,
+            0x70000009 => ElfShdrType::SHT_MIPS_RELD,
+            0x7000000b => ElfShdrType::SHT_MIPS_IFACE,
+            0x7000000c => ElfShdrType::SHT_MIPS_CONTENT,
+            0x7000000d => ElfShdrType::SHT_MIPS_OPTIONS,
+            0x70000010 => ElfShdrType::SHT_MIPS_SHDR,
+            0x70000011 => ElfShdrType::SHT_MIPS_FDESC,
+            0x70000012 => ElfShdrType::SHT_MIPS_EXTSYM,
+            0x70000013 => ElfShdrType::SHT_MIPS_DENSE,
+            0x70000014 => ElfShdrType::SHT_MIPS_PDESC,
+            0x70000015 => ElfShdrType::SHT_MIPS_LOCSYM,
+            0x70000016 => ElfShdrType::SHT_MIPS_AUXSYM,
+            0x70000017 => ElfShdrType::SHT_MIPS_OPTSYM,
+            0x70000018 => ElfShdrType::SHT_MIPS_LOCSTR,
+            0x70000019 => ElfShdrType::SHT_MIPS_LINE,
+            0x7000001a => ElfShdrType::SHT_MIPS_RFDESC,
+            0x7000001b => ElfShdrType::SHT_MIPS_DELTASYM,
+            0x7000001c => ElfShdrType::SHT_MIPS_DELTAINST,
+            0x7000001d => ElfShdrType::SHT_MIPS_DELTACLASS,
+            0x7000001e => ElfShdrType::SHT_MIPS_DWARF,
+            0x7000001f => ElfShdrType::SHT_MIPS_DELTADECL,
+            0x70000020 => ElfShdrType::SHT_MIPS_SYMBOL_LIB,
+            0x70000021 => ElfShdrType::SHT_MIPS_EVENTS,
+            0x70000022 => ElfShdrType::SHT_MIPS_TRANSLATE,
+            0x70000023 => ElfShdrType::SHT_MIPS_PIXIE,
+            0x70000024 => ElfShdrType::SHT_MIPS_XLATE,
+            0x70000025 => ElfShdrType::SHT_MIPS_XLATE_DEBUG,
+            0x70000026 => ElfShdrType::SHT_MIPS_WHIRL,
+            0x70000027 => ElfShdrType::SHT_MIPS_EH_REGION,
+            0x70000028 => ElfShdrType::SHT_MIPS_XLATE_OLD,
+            0x70000029 => ElfShdrType::SHT_MIPS_PDR_EXCEPTION,
+            x => ElfShdrType::Unknown(x),
+        }
+    }
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            ElfShdrType::SHT_NULL => "SHT_NULL",
+            ElfShdrType::SHT_PROGBITS => "SHT_PROGBITS",
+            ElfShdrType::SHT_SYMTAB => "SHT_SYMTAB",
+            ElfShdrType::SHT_STRTAB => "SHT_STRTAB",
+            ElfShdrType::SHT_RELA => "SHT_RELA",
+            ElfShdrType::SHT_HASH => "SHT_HASH",
+            ElfShdrType::SHT_DYNAMIC => "SHT_DYNAMIC",
+            ElfShdrType::SHT_NOTE => "SHT_NOTE",
+            ElfShdrType::SHT_NOBITS => "SHT_NOBITS",
+            ElfShdrType::SHT_REL => "SHT_REL",
+            ElfShdrType::SHT_SHLIB => "SHT_SHLIB",
+            ElfShdrType::SHT_DYNSYM => "SHT_DYNSYM",
+            ElfShdrType::SHT_INIT_ARRAY => "SHT_INIT_ARRAY",
+            ElfShdrType::SHT_FINI_ARRAY => "SHT_FINI_ARRAY",
+            ElfShdrType::SHT_PREINIT_ARRAY => "SHT_PREINIT_ARRAY",
+            ElfShdrType::SHT_GROUP => "SHT_GROUP",
+            ElfShdrType::SHT_SYMTAB_SHNDX => "SHT_SYMTAB_SHNDX",
+            ElfShdrType::SHT_NUM => "SHT_NUM",
+            ElfShdrType::SHT_GNU_ATTRIBUTES => "SHT_GNU_ATTRIBUTES",
+            ElfShdrType::SHT_GNU_HASH => "SHT_GNU_HASH",
+            ElfShdrType::SHT_GNU_LIBLIST => "SHT_GNU_LIBLIST",
+            ElfShdrType::SHT_CHECKSUM => "SHT_CHECKSUM",
+            ElfShdrType::SHT_SUNW_move => "SHT_SUNW_move",
+            ElfShdrType::SHT_SUNW_COMDAT => "SHT_SUNW_COMDAT",
+            ElfShdrType::SHT_SUNW_syminfo => "SHT_SUNW_syminfo",
+            ElfShdrType::SHT_GNU_verdef => "SHT_GNU_verdef",
+            ElfShdrType::SHT_GNU_verneed => "SHT_GNU_verneed",
+            ElfShdrType::SHT_GNU_versym => "SHT_GNU_versym",
+            ElfShdrType::SHT_MIPS_LIBLIST => "SHT_MIPS_LIBLIST",
+            ElfShdrType::SHT_MIPS_MSYM => "SHT_MIPS_MSYM",
+            ElfShdrType::SHT_MIPS_CONFLICT => "SHT_MIPS_CONFLICT",
+            ElfShdrType::SHT_MIPS_GPTAB => "SHT_MIPS_GPTAB",
+            ElfShdrType::SHT_MIPS_UCODE => "SHT_MIPS_UCODE",
+            ElfShdrType::SHT_MIPS_DEBUG => "SHT_MIPS_DEBUG",
+            ElfShdrType::SHT_MIPS_REGINFO => "SHT_MIPS_REGINFO",
+            ElfShdrType::SHT_MIPS_PACKAGE => "SHT_MIPS_PACKAGE",
+            ElfShdrType::SHT_MIPS_PACKSYM => "SHT_MIPS_PACKSYM",
+            ElfShdrType::SHT_MIPS_RELD => "SHT_MIPS_RELD",
+            ElfShdrType::SHT_MIPS_IFACE => "SHT_MIPS_IFACE",
+            ElfShdrType::SHT_MIPS_CONTENT => "SHT_MIPS_CONTENT",
+            ElfShdrType::SHT_MIPS_OPTIONS => "SHT_MIPS_OPTIONS",
+            ElfShdrType::SHT_MIPS_SHDR => "SHT_MIPS_SHDR",
+            ElfShdrType::SHT_MIPS_FDESC => "SHT_MIPS_FDESC",
+            ElfShdrType::SHT_MIPS_EXTSYM => "SHT_MIPS_EXTSYM",
+            ElfShdrType::SHT_MIPS_DENSE => "SHT_MIPS_DENSE",
+            ElfShdrType::SHT_MIPS_PDESC => "SHT_MIPS_PDESC",
+            ElfShdrType::SHT_MIPS_LOCSYM => "SHT_MIPS_LOCSYM",
+            ElfShdrType::SHT_MIPS_AUXSYM => "SHT_MIPS_AUXSYM",
+            ElfShdrType::SHT_MIPS_OPTSYM => "SHT_MIPS_OPTSYM",
+            ElfShdrType::SHT_MIPS_LOCSTR => "SHT_MIPS_LOCSTR",
+            ElfShdrType::SHT_MIPS_LINE => "SHT_MIPS_LINE",
+            ElfShdrType::SHT_MIPS_RFDESC => "SHT_MIPS_RFDESC",
+            ElfShdrType::SHT_MIPS_DELTASYM => "SHT_MIPS_DELTASYM",
+            ElfShdrType::SHT_MIPS_DELTAINST => "SHT_MIPS_DELTAINST",
+            ElfShdrType::SHT_MIPS_DELTACLASS => "SHT_MIPS_DELTACLASS",
+            ElfShdrType::SHT_MIPS_DWARF => "SHT_MIPS_DWARF",
+            ElfShdrType::SHT_MIPS_DELTADECL => "SHT_MIPS_DELTADECL",
+            ElfShdrType::SHT_MIPS_SYMBOL_LIB => "SHT_MIPS_SYMBOL_LIB",
+            ElfShdrType::SHT_MIPS_EVENTS => "SHT_MIPS_EVENTS",
+            ElfShdrType::SHT_MIPS_TRANSLATE => "SHT_MIPS_TRANSLATE",
+            ElfShdrType::SHT_MIPS_PIXIE => "SHT_MIPS_PIXIE",
+            ElfShdrType::SHT_MIPS_XLATE => "SHT_MIPS_XLATE",
+            ElfShdrType::SHT_MIPS_XLATE_DEBUG => "SHT_MIPS_XLATE_DEBUG",
+            ElfShdrType::SHT_MIPS_WHIRL => "SHT_MIPS_WHIRL",
+            ElfShdrType::SHT_MIPS_EH_REGION => "SHT_MIPS_EH_REGION",
+            ElfShdrType::SHT_MIPS_XLATE_OLD => "SHT_MIPS_XLATE_OLD",
+            ElfShdrType::SHT_MIPS_PDR_EXCEPTION => "SHT_MIPS_PDR_EXCEPTION",
+            ElfShdrType::Unknown(_) => "UNKNOWN/MIPS_VENDOR",
+        }
+    }
+}
 
 pub struct Elf32_Shdr {
     pub sh_name: u32,
-    pub sh_type: u32,
+    pub sh_type: ElfShdrType,
     pub sh_flags: u32,
     pub sh_addr: Elf32_Addr,
     pub sh_offset: Elf32_Off,
@@ -26,7 +239,7 @@ pub struct Elf32_Shdr {
 
 pub struct Elf64_Shdr {
     pub sh_name: u32,
-    pub sh_type: u32,
+    pub sh_type: ElfShdrType,
     pub sh_flags: u64,
     pub sh_addr: Elf64_Addr,
     pub sh_offset: Elf64_Off,
@@ -54,89 +267,18 @@ impl Elf32_Shdr {
 
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let start = offset;
+        let sh_type_raw = u32::from_le_bytes(bytes[start + 4..start + 8].try_into().unwrap());
         Self {
-            sh_name: u32::from_le_bytes(bytes[start..start+4].try_into().unwrap()),
-            sh_type: u32::from_le_bytes(bytes[start+4..start+8].try_into().unwrap()),
-            sh_flags: u32::from_le_bytes(bytes[start+8..start+12].try_into().unwrap()),
-            sh_addr: u32::from_le_bytes(bytes[start+12..start+16].try_into().unwrap()) as Elf32_Addr,
-            sh_offset: u32::from_le_bytes(bytes[start+16..start+20].try_into().unwrap()) as Elf32_Off,
-            sh_size: u32::from_le_bytes(bytes[start+20..start+24].try_into().unwrap()),
-            sh_link: u32::from_le_bytes(bytes[start+24..start+28].try_into().unwrap()),
-            sh_info: u32::from_le_bytes(bytes[start+28..start+32].try_into().unwrap()),
-            sh_addralign: u32::from_le_bytes(bytes[start+32..start+36].try_into().unwrap()),
-            sh_entsize: u32::from_le_bytes(bytes[start+36..start+40].try_into().unwrap()),
-        }
-    }
-    pub fn get_type_name(&self) -> &str {
-        match self.sh_type {
-            0 => "SHT_NULL",
-            1 => "SHT_PROGBITS",
-            2 => "SHT_SYMTAB",
-            3 => "SHT_STRTAB",
-            4 => "SHT_RELA",
-            5 => "SHT_HASH",
-            6 => "SHT_DYNAMIC",
-            7 => "SHT_NOTE",
-            8 => "SHT_NOBITS",
-            9 => "SHT_REL",
-            10 => "SHT_SHLIB",
-            11 => "SHT_DYNSYM",
-            14 => "SHT_INIT_ARRAY",
-            15 => "SHT_FINI_ARRAY",
-            16 => "SHT_PREINIT_ARRAY",
-            17 => "SHT_GROUP",
-            18 => "SHT_SYMTAB_SHNDX",
-            19 => "SHT_NUM",
-            0x6ffffff5 => "SHT_GNU_ATTRIBUTES",
-            0x6ffffff6 => "SHT_GNU_HASH",
-            0x6ffffff7 => "SHT_GNU_LIBLIST",
-            0x6ffffff8 => "SHT_CHECKSUM",
-            0x6ffffffa => "SHT_SUNW_move",
-            0x6ffffffb => "SHT_SUNW_COMDAT",
-            0x6ffffffc => "SHT_SUNW_syminfo",
-            0x6ffffffd => "SHT_GNU_verdef",
-            0x6ffffffe => "SHT_GNU_verneed",
-            0x6fffffff => "SHT_GNU_versym",
-            0x70000000 => "SHT_MIPS_LIBLIST",
-            0x70000001 => "SHT_MIPS_MSYM",
-            0x70000002 => "SHT_MIPS_CONFLICT",
-            0x70000003 => "SHT_MIPS_GPTAB",
-            0x70000004 => "SHT_MIPS_UCODE",
-            0x70000005 => "SHT_MIPS_DEBUG",
-            0x70000006 => "SHT_MIPS_REGINFO",
-            0x70000007 => "SHT_MIPS_PACKAGE",
-            0x70000008 => "SHT_MIPS_PACKSYM",
-            0x70000009 => "SHT_MIPS_RELD",
-            0x7000000b => "SHT_MIPS_IFACE",
-            0x7000000c => "SHT_MIPS_CONTENT",
-            0x7000000d => "SHT_MIPS_OPTIONS",
-            0x70000010 => "SHT_MIPS_SHDR",
-            0x70000011 => "SHT_MIPS_FDESC",
-            0x70000012 => "SHT_MIPS_EXTSYM",
-            0x70000013 => "SHT_MIPS_DENSE",
-            0x70000014 => "SHT_MIPS_PDESC",
-            0x70000015 => "SHT_MIPS_LOCSYM",
-            0x70000016 => "SHT_MIPS_AUXSYM",
-            0x70000017 => "SHT_MIPS_OPTSYM",
-            0x70000018 => "SHT_MIPS_LOCSTR",
-            0x70000019 => "SHT_MIPS_LINE",
-            0x7000001a => "SHT_MIPS_RFDESC",
-            0x7000001b => "SHT_MIPS_DELTASYM",
-            0x7000001c => "SHT_MIPS_DELTAINST",
-            0x7000001d => "SHT_MIPS_DELTACLASS",
-            0x7000001e => "SHT_MIPS_DWARF",
-            0x7000001f => "SHT_MIPS_DELTADECL",
-            0x70000020 => "SHT_MIPS_SYMBOL_LIB",
-            0x70000021 => "SHT_MIPS_EVENTS",
-            0x70000022 => "SHT_MIPS_TRANSLATE",
-            0x70000023 => "SHT_MIPS_PIXIE",
-            0x70000024 => "SHT_MIPS_XLATE",
-            0x70000025 => "SHT_MIPS_XLATE_DEBUG",
-            0x70000026 => "SHT_MIPS_WHIRL",
-            0x70000027 => "SHT_MIPS_EH_REGION",
-            0x70000028 => "SHT_MIPS_XLATE_OLD",
-            0x70000029 => "SHT_MIPS_PDR_EXCEPTION",
-            _ => "UNKNOWN/MIPS_VENDOR",
+            sh_name: u32::from_le_bytes(bytes[start..start + 4].try_into().unwrap()),
+            sh_type: ElfShdrType::from_raw(sh_type_raw),
+            sh_flags: u32::from_le_bytes(bytes[start + 8..start + 12].try_into().unwrap()),
+            sh_addr: u32::from_le_bytes(bytes[start + 12..start + 16].try_into().unwrap()) as Elf32_Addr,
+            sh_offset: u32::from_le_bytes(bytes[start + 16..start + 20].try_into().unwrap()) as Elf32_Off,
+            sh_size: u32::from_le_bytes(bytes[start + 20..start + 24].try_into().unwrap()),
+            sh_link: u32::from_le_bytes(bytes[start + 24..start + 28].try_into().unwrap()),
+            sh_info: u32::from_le_bytes(bytes[start + 28..start + 32].try_into().unwrap()),
+            sh_addralign: u32::from_le_bytes(bytes[start + 32..start + 36].try_into().unwrap()),
+            sh_entsize: u32::from_le_bytes(bytes[start + 36..start + 40].try_into().unwrap()),
         }
     }
 
@@ -190,14 +332,13 @@ impl Elf32_Shdr {
     pub fn print(&self, index: usize, bytes: &[u8]) {
         println!("Section Header {}:", index);
         println!("  Name: {}", self.sh_name);
-        let type_name = self.get_type_name();
-        println!("  Type: {}", type_name);
+        println!("  Type: {}", self.sh_type.type_name());
         println!("  Flags: {} (0x{:08X})", self.get_flags_string(), self.sh_flags);
         println!("  Address: 0x{:08X}", self.sh_addr);
         println!("  Offset: 0x{:08X}", self.sh_offset);
         println!("  Size: 0x{:08X}", self.sh_size);
-        
-        if type_name == "SHT_SYMTAB" || type_name == "SHT_DYNSYM" {
+
+        if self.sh_type == ElfShdrType::SHT_SYMTAB || self.sh_type == ElfShdrType::SHT_DYNSYM {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_symbols = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Symbols ({} entries):", num_symbols);
@@ -212,7 +353,7 @@ impl Elf32_Shdr {
             }
         }
         
-        if type_name == "SHT_RELA" {
+        if self.sh_type == ElfShdrType::SHT_RELA {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Relocations with addends ({} entries):", num_entries);
@@ -226,8 +367,8 @@ impl Elf32_Shdr {
                 }
             }
         }
-        
-        if type_name == "SHT_REL" {
+
+        if self.sh_type == ElfShdrType::SHT_REL {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Relocations ({} entries):", num_entries);
@@ -242,7 +383,7 @@ impl Elf32_Shdr {
             }
         }
         
-        if type_name == "SHT_DYNAMIC" {
+        if self.sh_type == ElfShdrType::SHT_DYNAMIC {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Dynamic entries ({} entries):", num_entries);
@@ -252,7 +393,7 @@ impl Elf32_Shdr {
                         let dyn_entry = crate::elf_dynamic::Elf32_Dyn::read_bytes(bytes, offset);
                         println!("    Dynamic {}:", i);
                         dyn_entry.print();
-                        if dyn_entry.d_tag == 0 {
+                        if dyn_entry.d_tag == crate::elf_dynamic::ElfDynTag::DT_NULL {
                             break;
                         }
                     }
@@ -260,7 +401,7 @@ impl Elf32_Shdr {
             }
         }
         
-        if type_name == "SHT_NOTE" {
+        if self.sh_type == ElfShdrType::SHT_NOTE {
             if self.sh_size > 0 {
                 let offset = self.sh_offset as usize;
                 if offset + 12 <= bytes.len() {
@@ -279,93 +420,20 @@ impl Elf32_Shdr {
 
 
 impl Elf64_Shdr {
-
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let start = offset;
+        let sh_type_raw = u32::from_le_bytes(bytes[start + 4..start + 8].try_into().unwrap());
         Self {
-            sh_name: u32::from_le_bytes(bytes[start..start+4].try_into().unwrap()),
-            sh_type: u32::from_le_bytes(bytes[start+4..start+8].try_into().unwrap()),
-            sh_flags: u64::from_le_bytes(bytes[start+8..start+16].try_into().unwrap()),
-            sh_addr: u64::from_le_bytes(bytes[start+16..start+24].try_into().unwrap()) as Elf64_Addr,
-            sh_offset: u64::from_le_bytes(bytes[start+24..start+32].try_into().unwrap()) as Elf64_Off,
-            sh_size: u64::from_le_bytes(bytes[start+32..start+40].try_into().unwrap()),
-            sh_link: u32::from_le_bytes(bytes[start+40..start+44].try_into().unwrap()),
-            sh_info: u32::from_le_bytes(bytes[start+44..start+48].try_into().unwrap()),
-            sh_addralign: u64::from_le_bytes(bytes[start+48..start+56].try_into().unwrap()),
-            sh_entsize: u64::from_le_bytes(bytes[start+56..start+64].try_into().unwrap()),
-        }
-    }
-
-    pub fn get_type_name(&self) -> &str {
-        match self.sh_type {
-            0 => "SHT_NULL",
-            1 => "SHT_PROGBITS",
-            2 => "SHT_SYMTAB",
-            3 => "SHT_STRTAB",
-            4 => "SHT_RELA",
-            5 => "SHT_HASH",
-            6 => "SHT_DYNAMIC",
-            7 => "SHT_NOTE",
-            8 => "SHT_NOBITS",
-            9 => "SHT_REL",
-            10 => "SHT_SHLIB",
-            11 => "SHT_DYNSYM",
-            14 => "SHT_INIT_ARRAY",
-            15 => "SHT_FINI_ARRAY",
-            16 => "SHT_PREINIT_ARRAY",
-            17 => "SHT_GROUP",
-            18 => "SHT_SYMTAB_SHNDX",
-            19 => "SHT_NUM",
-            0x6ffffff5 => "SHT_GNU_ATTRIBUTES",
-            0x6ffffff6 => "SHT_GNU_HASH",
-            0x6ffffff7 => "SHT_GNU_LIBLIST",
-            0x6ffffff8 => "SHT_CHECKSUM",
-            0x6ffffffa => "SHT_SUNW_move",
-            0x6ffffffb => "SHT_SUNW_COMDAT",
-            0x6ffffffc => "SHT_SUNW_syminfo",
-            0x6ffffffd => "SHT_GNU_verdef",
-            0x6ffffffe => "SHT_GNU_verneed",
-            0x6fffffff => "SHT_GNU_versym",
-            0x70000000 => "SHT_MIPS_LIBLIST",
-            0x70000001 => "SHT_MIPS_MSYM",
-            0x70000002 => "SHT_MIPS_CONFLICT",
-            0x70000003 => "SHT_MIPS_GPTAB",
-            0x70000004 => "SHT_MIPS_UCODE",
-            0x70000005 => "SHT_MIPS_DEBUG",
-            0x70000006 => "SHT_MIPS_REGINFO",
-            0x70000007 => "SHT_MIPS_PACKAGE",
-            0x70000008 => "SHT_MIPS_PACKSYM",
-            0x70000009 => "SHT_MIPS_RELD",
-            0x7000000b => "SHT_MIPS_IFACE",
-            0x7000000c => "SHT_MIPS_CONTENT",
-            0x7000000d => "SHT_MIPS_OPTIONS",
-            0x70000010 => "SHT_MIPS_SHDR",
-            0x70000011 => "SHT_MIPS_FDESC",
-            0x70000012 => "SHT_MIPS_EXTSYM",
-            0x70000013 => "SHT_MIPS_DENSE",
-            0x70000014 => "SHT_MIPS_PDESC",
-            0x70000015 => "SHT_MIPS_LOCSYM",
-            0x70000016 => "SHT_MIPS_AUXSYM",
-            0x70000017 => "SHT_MIPS_OPTSYM",
-            0x70000018 => "SHT_MIPS_LOCSTR",
-            0x70000019 => "SHT_MIPS_LINE",
-            0x7000001a => "SHT_MIPS_RFDESC",
-            0x7000001b => "SHT_MIPS_DELTASYM",
-            0x7000001c => "SHT_MIPS_DELTAINST",
-            0x7000001d => "SHT_MIPS_DELTACLASS",
-            0x7000001e => "SHT_MIPS_DWARF",
-            0x7000001f => "SHT_MIPS_DELTADECL",
-            0x70000020 => "SHT_MIPS_SYMBOL_LIB",
-            0x70000021 => "SHT_MIPS_EVENTS",
-            0x70000022 => "SHT_MIPS_TRANSLATE",
-            0x70000023 => "SHT_MIPS_PIXIE",
-            0x70000024 => "SHT_MIPS_XLATE",
-            0x70000025 => "SHT_MIPS_XLATE_DEBUG",
-            0x70000026 => "SHT_MIPS_WHIRL",
-            0x70000027 => "SHT_MIPS_EH_REGION",
-            0x70000028 => "SHT_MIPS_XLATE_OLD",
-            0x70000029 => "SHT_MIPS_PDR_EXCEPTION",
-            _ => "UNKNOWN/MIPS_VENDOR",
+            sh_name: u32::from_le_bytes(bytes[start..start + 4].try_into().unwrap()),
+            sh_type: ElfShdrType::from_raw(sh_type_raw),
+            sh_flags: u64::from_le_bytes(bytes[start + 8..start + 16].try_into().unwrap()),
+            sh_addr: u64::from_le_bytes(bytes[start + 16..start + 24].try_into().unwrap()) as Elf64_Addr,
+            sh_offset: u64::from_le_bytes(bytes[start + 24..start + 32].try_into().unwrap()) as Elf64_Off,
+            sh_size: u64::from_le_bytes(bytes[start + 32..start + 40].try_into().unwrap()),
+            sh_link: u32::from_le_bytes(bytes[start + 40..start + 44].try_into().unwrap()),
+            sh_info: u32::from_le_bytes(bytes[start + 44..start + 48].try_into().unwrap()),
+            sh_addralign: u64::from_le_bytes(bytes[start + 48..start + 56].try_into().unwrap()),
+            sh_entsize: u64::from_le_bytes(bytes[start + 56..start + 64].try_into().unwrap()),
         }
     }
 
@@ -439,14 +507,13 @@ impl Elf64_Shdr {
     pub fn print(&self, index: usize, bytes: &[u8]) {
         println!("Section Header {}:", index);
         println!("  Name: {}", self.sh_name);
-        let type_name = self.get_type_name();
-        println!("  Type: {}", type_name);
+        println!("  Type: {}", self.sh_type.type_name());
         println!("  Flags: {} (0x{:016X})", self.get_flags_string(), self.sh_flags);
         println!("  Address: 0x{:016X}", self.sh_addr);
         println!("  Offset: 0x{:016X}", self.sh_offset);
         println!("  Size: 0x{:016X}", self.sh_size);
-        
-        if type_name == "SHT_SYMTAB" || type_name == "SHT_DYNSYM" {
+
+        if self.sh_type == ElfShdrType::SHT_SYMTAB || self.sh_type == ElfShdrType::SHT_DYNSYM {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_symbols = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Symbols ({} entries):", num_symbols);
@@ -460,8 +527,8 @@ impl Elf64_Shdr {
                 }
             }
         }
-        
-        if type_name == "SHT_RELA" {
+
+        if self.sh_type == ElfShdrType::SHT_RELA {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Relocations with addends ({} entries):", num_entries);
@@ -476,7 +543,7 @@ impl Elf64_Shdr {
             }
         }
         
-        if type_name == "SHT_REL" {
+        if self.sh_type == ElfShdrType::SHT_REL {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Relocations ({} entries):", num_entries);
@@ -490,8 +557,8 @@ impl Elf64_Shdr {
                 }
             }
         }
-        
-        if type_name == "SHT_DYNAMIC" {
+
+        if self.sh_type == ElfShdrType::SHT_DYNAMIC {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
                 println!("  Dynamic entries ({} entries):", num_entries);
@@ -501,7 +568,7 @@ impl Elf64_Shdr {
                         let dyn_entry = crate::elf_dynamic::Elf64_Dyn::read_bytes(bytes, offset);
                         println!("    Dynamic {}:", i);
                         dyn_entry.print();
-                        if dyn_entry.d_tag == 0 {
+                        if dyn_entry.d_tag == crate::elf_dynamic::ElfDynTag::DT_NULL {
                             break;
                         }
                     }
@@ -509,7 +576,7 @@ impl Elf64_Shdr {
             }
         }
         
-        if type_name == "SHT_NOTE" {
+        if self.sh_type == ElfShdrType::SHT_NOTE {
             if self.sh_size > 0 {
                 let offset = self.sh_offset as usize;
                 if offset + 12 <= bytes.len() {
