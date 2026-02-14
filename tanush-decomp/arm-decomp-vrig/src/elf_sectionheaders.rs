@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 
 
 pub type Elf32_Addr = u32;
@@ -588,4 +589,3 @@ impl Elf64_Shdr {
         }
     }
 }
-

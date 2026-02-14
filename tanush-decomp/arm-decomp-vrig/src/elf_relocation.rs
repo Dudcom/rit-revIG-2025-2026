@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 
 
 use crate::elf_sectionheaders::{Elf32_Addr, Elf64_Addr};

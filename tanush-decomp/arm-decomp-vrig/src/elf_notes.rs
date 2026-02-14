@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 
 pub struct Elf32_Nhdr {
     pub n_namesz: u32,

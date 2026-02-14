@@ -1,3 +1,4 @@
+#![allow(non_camel_case_types)]
 
 
 use crate::elf_sectionheaders::{Elf32_Addr, Elf64_Addr};
@@ -235,5 +236,4 @@ impl Elf64_Sym {
         println!("    Shndx: 0x{:04X}", self.st_shndx);
     }
 }
-
 

@@ -1,8 +1,10 @@
+#![allow(non_camel_case_types)]
 
 // https://man7.org/linux/man-pages/man5/elf.5.html
 // https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html#elfid
 // https://sites.uclouvain.be/SystInfo/usr/include/elf.h.html
 use crate::elf_sectionheaders::{Elf32_Shdr, Elf64_Shdr};
+use crate::decomplier_capstone::DecomplierCapstone;
 
 pub type ElfNAddr = u64;
 pub type ElfNOff = u64;
@@ -284,6 +286,7 @@ pub enum EMMachine {
     EM_TPC,
     EM_SNP1K,
     EM_ST200,
+    EM_ARM_AARCH64,
     Unknown(u16),
 }
 
@@ -372,6 +375,7 @@ impl EMMachine {
             98 => EMMachine::EM_TPC,
             99 => EMMachine::EM_SNP1K,
             100 => EMMachine::EM_ST200,
+            183 => EMMachine::EM_ARM_AARCH64,
             x => EMMachine::Unknown(x),
         }
     }
@@ -459,6 +463,7 @@ impl EMMachine {
             EMMachine::EM_TPC => "Tenor Network TPC processor",
             EMMachine::EM_SNP1K => "Trebia SNP 1000 processor",
             EMMachine::EM_ST200 => "STMicroelectronics ST200 microcontroller",
+            EMMachine::EM_ARM_AARCH64 => "ARM AArch64",
             EMMachine::Unknown(_) => "Invalid Machine Type",
         }
     }
@@ -778,6 +783,56 @@ impl ElfNEhdr {
         }
     }
 
+    fn disassemble_exec_sections32(&self, file_bytes: &[u8], sections: &[Elf32_Shdr]) {
+        if sections.is_empty() {
+            return;
+        }
+        let decomplier = DecomplierCapstone::new_arm32();
+        for (idx, section) in sections.iter().enumerate() {
+            // SHF_EXECINSTR = 0x4
+            if section.sh_flags & 0x4 == 0 || section.sh_size == 0 {
+                continue;
+            }
+            println!(
+                "ELF file: Section {} (index {}) is executable",
+                section.sh_name, idx
+            );
+            // capstone wrapper 
+            decomplier.dissamble_section32bit(
+                file_bytes,
+                section.sh_offset as u64,
+                section.sh_addr as u64,
+                section.sh_size,
+                section.sh_size,
+            );
+        }
+    }
+
+    fn disassemble_exec_sections64(&self, file_bytes: &[u8], sections: &[Elf64_Shdr]) {
+        if sections.is_empty() {
+            return;
+        }
+        let decomplier = DecomplierCapstone::new_arm64();
+        for (idx, section) in sections.iter().enumerate() {
+            // SHF_EXECINSTR = 0x4
+            if section.sh_flags & 0x4 == 0 || section.sh_size == 0 {
+                continue;
+            }
+            println!(
+                "ELF file: Section {} (index {}) is executable",
+                section.sh_name, idx
+            );
+            // capstone wrapper 
+            decomplier.dissamble_section64bit(
+                file_bytes,
+                section.sh_offset,
+                section.sh_addr,
+                section.sh_size,
+                section.sh_size,
+            );
+        }
+    }
+
     pub fn new() -> Self {
         Self {
             e_ident: [0; EI_NIDENT],
@@ -853,9 +908,6 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
-                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
-                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
-                }
             }
         } else if self.class == ElfClass::CLASS64 {
             let mut program_headers: Vec<Elf64_Phdr> = Vec::new();
@@ -865,9 +917,6 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
-                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
-                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
-                }
             }
         }
 
@@ -880,8 +929,9 @@ impl ElfNEhdr {
                 let shdr = Elf32_Shdr::read_bytes(file_bytes, offset);
                 shdr.print(i, file_bytes);
                 section_headers.push(shdr);
-                offset += self.e_shentsize as usize;d
+                offset += self.e_shentsize as usize;
             }
+            self.disassemble_exec_sections32(file_bytes, &section_headers);
         } else if self.class == ElfClass::CLASS64 {
             let mut section_headers: Vec<Elf64_Shdr> = Vec::new();
             let mut offset = self.e_shoff as usize;
@@ -891,6 +941,7 @@ impl ElfNEhdr {
                 section_headers.push(shdr);
                 offset += self.e_shentsize as usize;
             }
+            self.disassemble_exec_sections64(file_bytes, &section_headers);
         }
     }
 }

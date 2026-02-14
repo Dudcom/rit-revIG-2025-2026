@@ -5,11 +5,11 @@ mod elf_symbol;
 mod elf_relocation;
 mod elf_dynamic;
 mod elf_notes;
+mod decomplier_capstone;
 use std::env;
 use std::fs::File;
 use std::io::Read;
 use elf_header::ElfNEhdr;
-
 
 fn main() {
 
