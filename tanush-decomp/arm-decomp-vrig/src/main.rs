@@ -1,18 +1,18 @@
+mod decomplier;
+mod dissam_capstone;
+mod elf_dynamic;
 mod elf_header;
+mod elf_notes;
 mod elf_programheaders;
+mod elf_relocation;
 mod elf_sectionheaders;
 mod elf_symbol;
-mod elf_relocation;
-mod elf_dynamic;
-mod elf_notes;
-mod decomplier_capstone;
+use elf_header::ElfNEhdr;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use elf_header::ElfNEhdr;
 
 fn main() {
-
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
@@ -25,8 +25,9 @@ fn main() {
     let mut file = File::open(binary_file).expect("Failed to open file");
 
     let mut file_bytes = Vec::new();
-    file.read_to_end(&mut file_bytes).expect("Failed to read file");
-    
+    file.read_to_end(&mut file_bytes)
+        .expect("Failed to read file");
+
     let mut header_buffer = [0; 0x40];
     header_buffer.copy_from_slice(&file_bytes[0..0x40]);
     println!("Header buffer: {:?}", &header_buffer[0..4]);

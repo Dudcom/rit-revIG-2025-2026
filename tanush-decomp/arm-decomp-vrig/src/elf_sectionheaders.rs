@@ -1,6 +1,5 @@
 #![allow(non_camel_case_types)]
 
-
 pub type Elf32_Addr = u32;
 pub type Elf64_Addr = u64;
 pub type Elf32_Off = u32;
@@ -252,19 +251,18 @@ pub struct Elf64_Shdr {
 }
 
 impl Elf32_Shdr {
-
-        //    typedef struct {
-        //        uint32_t   sh_name;
-        //        uint32_t   sh_type;
-        //        uint32_t   sh_flags;
-        //        Elf32_Addr sh_addr;
-        //        Elf32_Off  sh_offset;
-        //        uint32_t   sh_size;
-        //        uint32_t   sh_link;
-        //        uint32_t   sh_info;
-        //        uint32_t   sh_addralign;
-        //        uint32_t   sh_entsize;
-        //    } Elf32_Shdr;
+    //    typedef struct {
+    //        uint32_t   sh_name;
+    //        uint32_t   sh_type;
+    //        uint32_t   sh_flags;
+    //        Elf32_Addr sh_addr;
+    //        Elf32_Off  sh_offset;
+    //        uint32_t   sh_size;
+    //        uint32_t   sh_link;
+    //        uint32_t   sh_info;
+    //        uint32_t   sh_addralign;
+    //        uint32_t   sh_entsize;
+    //    } Elf32_Shdr;
 
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let start = offset;
@@ -273,8 +271,10 @@ impl Elf32_Shdr {
             sh_name: u32::from_le_bytes(bytes[start..start + 4].try_into().unwrap()),
             sh_type: ElfShdrType::from_raw(sh_type_raw),
             sh_flags: u32::from_le_bytes(bytes[start + 8..start + 12].try_into().unwrap()),
-            sh_addr: u32::from_le_bytes(bytes[start + 12..start + 16].try_into().unwrap()) as Elf32_Addr,
-            sh_offset: u32::from_le_bytes(bytes[start + 16..start + 20].try_into().unwrap()) as Elf32_Off,
+            sh_addr: u32::from_le_bytes(bytes[start + 12..start + 16].try_into().unwrap())
+                as Elf32_Addr,
+            sh_offset: u32::from_le_bytes(bytes[start + 16..start + 20].try_into().unwrap())
+                as Elf32_Off,
             sh_size: u32::from_le_bytes(bytes[start + 20..start + 24].try_into().unwrap()),
             sh_link: u32::from_le_bytes(bytes[start + 24..start + 28].try_into().unwrap()),
             sh_info: u32::from_le_bytes(bytes[start + 28..start + 32].try_into().unwrap()),
@@ -285,7 +285,7 @@ impl Elf32_Shdr {
 
     pub fn get_flags_string(&self) -> String {
         let mut flags = Vec::new();
-        
+
         if self.sh_flags & 0x1 != 0 {
             flags.push("SHF_WRITE");
         }
@@ -322,7 +322,7 @@ impl Elf32_Shdr {
         if self.sh_flags & 0x80000000 != 0 {
             flags.push("SHF_EXCLUDE");
         }
-        
+
         if flags.is_empty() {
             "".to_string()
         } else {
@@ -334,7 +334,11 @@ impl Elf32_Shdr {
         println!("Section Header {}:", index);
         println!("  Name: {}", self.sh_name);
         println!("  Type: {}", self.sh_type.type_name());
-        println!("  Flags: {} (0x{:08X})", self.get_flags_string(), self.sh_flags);
+        println!(
+            "  Flags: {} (0x{:08X})",
+            self.get_flags_string(),
+            self.sh_flags
+        );
         println!("  Address: 0x{:08X}", self.sh_addr);
         println!("  Offset: 0x{:08X}", self.sh_offset);
         println!("  Size: 0x{:08X}", self.sh_size);
@@ -353,7 +357,7 @@ impl Elf32_Shdr {
                 }
             }
         }
-        
+
         if self.sh_type == ElfShdrType::SHT_RELA {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
@@ -383,7 +387,7 @@ impl Elf32_Shdr {
                 }
             }
         }
-        
+
         if self.sh_type == ElfShdrType::SHT_DYNAMIC {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
@@ -401,7 +405,7 @@ impl Elf32_Shdr {
                 }
             }
         }
-        
+
         if self.sh_type == ElfShdrType::SHT_NOTE {
             if self.sh_size > 0 {
                 let offset = self.sh_offset as usize;
@@ -413,12 +417,7 @@ impl Elf32_Shdr {
             }
         }
     }
-
 }
-
-
-
-
 
 impl Elf64_Shdr {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
@@ -428,8 +427,10 @@ impl Elf64_Shdr {
             sh_name: u32::from_le_bytes(bytes[start..start + 4].try_into().unwrap()),
             sh_type: ElfShdrType::from_raw(sh_type_raw),
             sh_flags: u64::from_le_bytes(bytes[start + 8..start + 16].try_into().unwrap()),
-            sh_addr: u64::from_le_bytes(bytes[start + 16..start + 24].try_into().unwrap()) as Elf64_Addr,
-            sh_offset: u64::from_le_bytes(bytes[start + 24..start + 32].try_into().unwrap()) as Elf64_Off,
+            sh_addr: u64::from_le_bytes(bytes[start + 16..start + 24].try_into().unwrap())
+                as Elf64_Addr,
+            sh_offset: u64::from_le_bytes(bytes[start + 24..start + 32].try_into().unwrap())
+                as Elf64_Off,
             sh_size: u64::from_le_bytes(bytes[start + 32..start + 40].try_into().unwrap()),
             sh_link: u32::from_le_bytes(bytes[start + 40..start + 44].try_into().unwrap()),
             sh_info: u32::from_le_bytes(bytes[start + 44..start + 48].try_into().unwrap()),
@@ -440,15 +441,15 @@ impl Elf64_Shdr {
 
     /* Legal values for sh_flags (section flags).  */
 
-        // #define SHF_WRITE             (1 << 0)        /* Writable */
-        // #define SHF_ALLOC             (1 << 1)        /* Occupies memory during execution */
-        // #define SHF_EXECINSTR             (1 << 2)        /* Executable */
-        // #define SHF_MERGE             (1 << 4)        /* Might be merged */
-        // #define SHF_STRINGS             (1 << 5)        /* Contains nul-terminated strings */
-        // #define SHF_INFO_LINK             (1 << 6)        /* `sh_info' contains SHT index */
-        // #define SHF_LINK_ORDER             (1 << 7)        /* Preserve order after combining */
-        // #define SHF_OS_NONCONFORMING (1 << 8)        /* Non-standard OS specific handling
-        //                                            required */
+    // #define SHF_WRITE             (1 << 0)        /* Writable */
+    // #define SHF_ALLOC             (1 << 1)        /* Occupies memory during execution */
+    // #define SHF_EXECINSTR             (1 << 2)        /* Executable */
+    // #define SHF_MERGE             (1 << 4)        /* Might be merged */
+    // #define SHF_STRINGS             (1 << 5)        /* Contains nul-terminated strings */
+    // #define SHF_INFO_LINK             (1 << 6)        /* `sh_info' contains SHT index */
+    // #define SHF_LINK_ORDER             (1 << 7)        /* Preserve order after combining */
+    // #define SHF_OS_NONCONFORMING (1 << 8)        /* Non-standard OS specific handling
+    //                                            required */
     // #define SHF_GROUP             (1 << 9)        /* Section is member of a group.  */
     // #define SHF_TLS                     (1 << 10)        /* Section hold thread-local data.  */
     // #define SHF_MASKOS             0x0ff00000        /* OS-specific.  */
@@ -459,7 +460,7 @@ impl Elf64_Shdr {
     //                                            referenced or allocated (Solaris).*/
     pub fn get_flags_string(&self) -> String {
         let mut flags = Vec::new();
-        
+
         if self.sh_flags & 0x1 != 0 {
             flags.push("SHF_WRITE");
         }
@@ -496,7 +497,7 @@ impl Elf64_Shdr {
         if self.sh_flags & 0x80000000 != 0 {
             flags.push("SHF_EXCLUDE");
         }
-        
+
         if flags.is_empty() {
             "".to_string()
         } else {
@@ -504,12 +505,15 @@ impl Elf64_Shdr {
         }
     }
 
-
     pub fn print(&self, index: usize, bytes: &[u8]) {
         println!("Section Header {}:", index);
         println!("  Name: {}", self.sh_name);
         println!("  Type: {}", self.sh_type.type_name());
-        println!("  Flags: {} (0x{:016X})", self.get_flags_string(), self.sh_flags);
+        println!(
+            "  Flags: {} (0x{:016X})",
+            self.get_flags_string(),
+            self.sh_flags
+        );
         println!("  Address: 0x{:016X}", self.sh_addr);
         println!("  Offset: 0x{:016X}", self.sh_offset);
         println!("  Size: 0x{:016X}", self.sh_size);
@@ -543,7 +547,7 @@ impl Elf64_Shdr {
                 }
             }
         }
-        
+
         if self.sh_type == ElfShdrType::SHT_REL {
             if self.sh_entsize > 0 && self.sh_size > 0 {
                 let num_entries = (self.sh_size / self.sh_entsize) as usize;
@@ -576,7 +580,7 @@ impl Elf64_Shdr {
                 }
             }
         }
-        
+
         if self.sh_type == ElfShdrType::SHT_NOTE {
             if self.sh_size > 0 {
                 let offset = self.sh_offset as usize;

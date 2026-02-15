@@ -1,6 +1,5 @@
 #![allow(non_camel_case_types)]
 
-
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ElfDynTag {
     DT_NULL,
@@ -201,11 +200,18 @@ impl Elf32_Dyn {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let d_tag_raw = i32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
         let d_val = u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap());
-        Self { d_tag: ElfDynTag::from_raw_i32(d_tag_raw), d_val }
+        Self {
+            d_tag: ElfDynTag::from_raw_i32(d_tag_raw),
+            d_val,
+        }
     }
 
     pub fn print(&self) {
-        println!("    Tag: {} (0x{:08X})", self.d_tag.type_name(), self.d_tag.as_raw_i32() as u32);
+        println!(
+            "    Tag: {} (0x{:08X})",
+            self.d_tag.type_name(),
+            self.d_tag.as_raw_i32() as u32
+        );
         println!("    Value/Ptr: 0x{:08X}", self.d_val);
     }
 }
@@ -214,11 +220,18 @@ impl Elf64_Dyn {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let d_tag_raw = i64::from_le_bytes(bytes[offset..offset + 8].try_into().unwrap());
         let d_val = u64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap());
-        Self { d_tag: ElfDynTag::from_raw(d_tag_raw), d_val }
+        Self {
+            d_tag: ElfDynTag::from_raw(d_tag_raw),
+            d_val,
+        }
     }
 
     pub fn print(&self) {
-        println!("    Tag: {} (0x{:016X})", self.d_tag.type_name(), self.d_tag.as_raw());
+        println!(
+            "    Tag: {} (0x{:016X})",
+            self.d_tag.type_name(),
+            self.d_tag.as_raw()
+        );
         println!("    Value/Ptr: 0x{:016X}", self.d_val);
     }
 }

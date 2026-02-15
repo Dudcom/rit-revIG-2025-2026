@@ -1,6 +1,5 @@
 #![allow(non_camel_case_types)]
 
-
 use crate::elf_sectionheaders::{Elf32_Addr, Elf64_Addr};
 
 macro_rules! ELF32_ST_BIND {
@@ -163,8 +162,6 @@ impl ElfSymVisibility {
 //     uint64_t      st_size;
 // } Elf64_Sym;
 
-
-
 pub struct Elf32_Sym {
     pub st_name: u32,
     pub st_value: Elf32_Addr,
@@ -192,7 +189,8 @@ pub struct Elf64_Sym {
 impl Elf32_Sym {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
         let st_name = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
-        let st_value = u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap()) as Elf32_Addr;
+        let st_value =
+            u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap()) as Elf32_Addr;
         let st_size = u32::from_le_bytes(bytes[offset + 8..offset + 12].try_into().unwrap());
         let st_info = bytes[offset + 12];
         let st_other = bytes[offset + 13];
@@ -200,15 +198,33 @@ impl Elf32_Sym {
         let st_bind = ElfSymBind::from_raw(ELF32_ST_BIND!(st_info));
         let st_type = ElfSymType::from_raw(ELF32_ST_TYPE!(st_info));
         let st_visibility = ElfSymVisibility::from_raw(ELF32_ST_VISIBILITY!(st_other));
-        Self { st_name, st_value, st_size, st_info, st_other, st_shndx, st_bind, st_type, st_visibility }
+        Self {
+            st_name,
+            st_value,
+            st_size,
+            st_info,
+            st_other,
+            st_shndx,
+            st_bind,
+            st_type,
+            st_visibility,
+        }
     }
 
     pub fn print(&self) {
         println!("    Name: {}", self.st_name);
         println!("    Value: 0x{:08X}", self.st_value);
         println!("    Size: 0x{:08X}", self.st_size);
-        println!("    Info: {} {}", self.st_bind.type_name(), self.st_type.type_name());
-        println!("    Other: {} (0x{:02X})", self.st_visibility.type_name(), self.st_other);
+        println!(
+            "    Info: {} {}",
+            self.st_bind.type_name(),
+            self.st_type.type_name()
+        );
+        println!(
+            "    Other: {} (0x{:02X})",
+            self.st_visibility.type_name(),
+            self.st_other
+        );
         println!("    Shndx: 0x{:04X}", self.st_shndx);
     }
 }
@@ -219,21 +235,39 @@ impl Elf64_Sym {
         let st_info = bytes[offset + 4];
         let st_other = bytes[offset + 5];
         let st_shndx = u16::from_le_bytes(bytes[offset + 6..offset + 8].try_into().unwrap());
-        let st_value = u64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap()) as Elf64_Addr;
+        let st_value =
+            u64::from_le_bytes(bytes[offset + 8..offset + 16].try_into().unwrap()) as Elf64_Addr;
         let st_size = u64::from_le_bytes(bytes[offset + 16..offset + 24].try_into().unwrap());
         let st_bind = ElfSymBind::from_raw(ELF32_ST_BIND!(st_info));
         let st_type = ElfSymType::from_raw(ELF32_ST_TYPE!(st_info));
         let st_visibility = ElfSymVisibility::from_raw(ELF32_ST_VISIBILITY!(st_other));
-        Self { st_name, st_info, st_other, st_shndx, st_value, st_size, st_bind, st_type, st_visibility }
+        Self {
+            st_name,
+            st_info,
+            st_other,
+            st_shndx,
+            st_value,
+            st_size,
+            st_bind,
+            st_type,
+            st_visibility,
+        }
     }
 
     pub fn print(&self) {
         println!("    Name: {}", self.st_name);
         println!("    Value: 0x{:016X}", self.st_value);
         println!("    Size: 0x{:016X}", self.st_size);
-        println!("    Info: {} {}", self.st_bind.type_name(), self.st_type.type_name());
-        println!("    Other: {} (0x{:02X})", self.st_visibility.type_name(), self.st_other);
+        println!(
+            "    Info: {} {}",
+            self.st_bind.type_name(),
+            self.st_type.type_name()
+        );
+        println!(
+            "    Other: {} (0x{:02X})",
+            self.st_visibility.type_name(),
+            self.st_other
+        );
         println!("    Shndx: 0x{:04X}", self.st_shndx);
     }
 }
-

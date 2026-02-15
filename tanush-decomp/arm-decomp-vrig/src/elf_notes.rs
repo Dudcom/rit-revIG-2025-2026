@@ -51,16 +51,20 @@ fn get_note_type_name(n_type: u32, name: &str) -> String {
 
 impl Elf32_Nhdr {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
-        let n_namesz = u32::from_le_bytes(bytes[offset..offset+4].try_into().unwrap());
-        let n_descsz = u32::from_le_bytes(bytes[offset+4..offset+8].try_into().unwrap());
-        let n_type = u32::from_le_bytes(bytes[offset+8..offset+12].try_into().unwrap());
-        Self { n_namesz, n_descsz, n_type }
+        let n_namesz = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+        let n_descsz = u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap());
+        let n_type = u32::from_le_bytes(bytes[offset + 8..offset + 12].try_into().unwrap());
+        Self {
+            n_namesz,
+            n_descsz,
+            n_type,
+        }
     }
 
     pub fn print(&self, bytes: &[u8], offset: usize) {
         let name_offset = offset + 12;
         let mut name = String::new();
-        
+
         if self.n_namesz > 0 && name_offset + self.n_namesz as usize <= bytes.len() {
             for i in 0..self.n_namesz as usize {
                 let byte = bytes[name_offset + i];
@@ -70,10 +74,14 @@ impl Elf32_Nhdr {
                 name.push(byte as char);
             }
         }
-        
+
         println!("    Name size: {}", self.n_namesz);
         println!("    Desc size: {}", self.n_descsz);
-        println!("    Type: {} ({})", get_note_type_name(self.n_type, &name), self.n_type);
+        println!(
+            "    Type: {} ({})",
+            get_note_type_name(self.n_type, &name),
+            self.n_type
+        );
         if !name.is_empty() {
             println!("    Name: {}", name);
         }
@@ -82,16 +90,20 @@ impl Elf32_Nhdr {
 
 impl Elf64_Nhdr {
     pub fn read_bytes(bytes: &[u8], offset: usize) -> Self {
-        let n_namesz = u32::from_le_bytes(bytes[offset..offset+4].try_into().unwrap());
-        let n_descsz = u32::from_le_bytes(bytes[offset+4..offset+8].try_into().unwrap());
-        let n_type = u32::from_le_bytes(bytes[offset+8..offset+12].try_into().unwrap());
-        Self { n_namesz, n_descsz, n_type }
+        let n_namesz = u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap());
+        let n_descsz = u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap());
+        let n_type = u32::from_le_bytes(bytes[offset + 8..offset + 12].try_into().unwrap());
+        Self {
+            n_namesz,
+            n_descsz,
+            n_type,
+        }
     }
 
     pub fn print(&self, bytes: &[u8], offset: usize) {
         let name_offset = offset + 12;
         let mut name = String::new();
-        
+
         if self.n_namesz > 0 && name_offset + self.n_namesz as usize <= bytes.len() {
             for i in 0..self.n_namesz as usize {
                 let byte = bytes[name_offset + i];
@@ -101,10 +113,14 @@ impl Elf64_Nhdr {
                 name.push(byte as char);
             }
         }
-        
+
         println!("    Name size: {}", self.n_namesz);
         println!("    Desc size: {}", self.n_descsz);
-        println!("    Type: {} ({})", get_note_type_name(self.n_type, &name), self.n_type);
+        println!(
+            "    Type: {} ({})",
+            get_note_type_name(self.n_type, &name),
+            self.n_type
+        );
         if !name.is_empty() {
             println!("    Name: {}", name);
         }
