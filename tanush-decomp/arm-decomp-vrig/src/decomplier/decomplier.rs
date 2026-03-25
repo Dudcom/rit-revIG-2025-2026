@@ -7,6 +7,7 @@ use capstone::{Insn, Instructions};
 
 #[derive(Debug)]
 struct BasicBlockNode<'insn> {
+    id: usize,
     instruction: Vec<usize>,
     start_addr: Option<u64>,
     end_addr: Option<u64>,
@@ -18,6 +19,7 @@ struct BasicBlockNode<'insn> {
 impl<'insn> BasicBlockNode<'insn> {
     fn new() -> Self {
         Self {
+            id: 0,
             instruction: Vec::new(),
             start_addr: None,
             end_addr: None,
@@ -32,9 +34,13 @@ impl<'insn> BasicBlockNode<'insn> {
     }
 }
 
-/// Skeleton container for the upcoming high level decompiler.
+#[derive(Debug)]
+struct CFG {
+    successors: HashMap<usize, HashSet<usize>>,
+    predecessors: HashMap<usize, HashSet<usize>>,
+}
+
 pub struct Decomplier<'insn> {
-    // basic_blocks: Vec<Instructions<'insn>>,
     instructions: Rc<Instructions<'insn>>,
     address_to_index: Rc<HashMap<u64, usize>>,
     roots: Vec<Rc<RefCell<BasicBlockNode<'insn>>>>,
@@ -98,13 +104,14 @@ impl<'insn> Decomplier<'insn> {
             return BasicBlockNode::new_ref();
         }
 
-        // if we are revisiting the same block, return the cached block
-        // memoization bs 
+        // if we are revisiting the same block
+        // we need this in order to detect loops
         if let Some(existing) = cache.get(&start_idx) {
             return Rc::clone(existing);
         }
 
         let node = BasicBlockNode::new_ref();
+        node.borrow_mut().id = start_idx;
         cache.insert(start_idx, Rc::clone(&node));
 
         let mut i = start_idx;
@@ -125,14 +132,14 @@ impl<'insn> Decomplier<'insn> {
                     .unwrap_or_default();
 
                 if let Some(target_idx) = Self::jump_target_index(address_to_index, insn) {
-                    println!("Target index: {:#?}", target_idx);
+                    //println!("Target index: {:#?}", target_idx);
                     let left_block = Self::basic_blocks_analysis(instructions, address_to_index, target_idx, cache);
 
                     // we check if the ins is a "fallthrough" ins
                     if !Self::has_fallthrough(&mnemonic) {
                         end_addr = instructions
                             .get(target_idx)
-                            .map(|target_insn| target_insn.address()); // get the addr of the instruction if it is a fallthrough
+                            .map(|target_insn: &Insn<'insn>| target_insn.address());
 
                         // if the end addr fails 
                         if end_addr.is_none() {
@@ -231,8 +238,6 @@ impl<'insn> Decomplier<'insn> {
         !matches!(mnemonic, "b" | "br" | "ret")
     }
 
-
-    // ngl this was AI lol 
     fn print_basic_blocks(&self) {
         println!("Basic Blocks");
         println!("============");
@@ -253,7 +258,7 @@ impl<'insn> Decomplier<'insn> {
         }
     }
 
-    // ngl this was AI lol 
+
     fn print_block(
         &self,
         node: &Rc<RefCell<BasicBlockNode<'insn>>>,
@@ -318,6 +323,103 @@ impl<'insn> Decomplier<'insn> {
         }
     }
 
+    fn build_successor_predecessor(
+        // we find successor and pred for each block 
+        cache: &HashMap<usize, Rc<RefCell<BasicBlockNode<'insn>>>>,
+    )-> CFG{
+        let mut succ = HashMap::<usize, HashSet<usize>>::new();
+        let mut pred = HashMap::<usize, HashSet<usize>>::new();
+        for node in cache.values(){
+            let borrowed_node = node.borrow();
+            let id = borrowed_node.id;
+
+            succ.entry(id).or_default();
+            pred.entry(id).or_default();
+
+            if let Some(left) = &borrowed_node.left {
+                let succ_id = left.borrow().id;
+                succ.entry(id).or_default().insert(succ_id);
+                pred.entry(succ_id).or_default().insert(id);
+            }
+            if let Some(right) = &borrowed_node.right {
+                let succ_id = right.borrow().id;
+                succ.entry(id).or_default().insert(succ_id);
+                pred.entry(succ_id).or_default().insert(id);
+            }
+        }
+        CFG {
+            successors: succ,
+            predecessors: pred,
+        }
+    }
+
+    fn natural_loop_block_ids(cfg: &CFG, header: usize, tail: usize) -> Vec<usize> {
+        // we have walk to the cfg till header == tail, while header!=tail
+        // we add the block to `blocks`
+        let mut blocks = HashSet::new();
+        blocks.insert(header);
+        if header != tail {
+            blocks.insert(tail);
+            let mut worklist = vec![tail];
+            while let Some(b) = worklist.pop() {
+                let Some(preds) = cfg.predecessors.get(&b) else {
+                    continue;
+                };
+                for &p in preds {
+                    if !blocks.contains(&p) {
+                        blocks.insert(p);
+                        worklist.push(p);
+                    }
+                }
+            }
+        }
+        let mut ids: Vec<usize> = blocks.into_iter().collect();
+        ids.sort_unstable();
+        ids
+    }
+
+    fn print_block_instructions(
+        instructions: &Instructions<'insn>,
+        cache: &HashMap<usize, Rc<RefCell<BasicBlockNode<'insn>>>>,
+        block_id: usize,
+    ) {
+        let Some(node_rc) = cache.get(&block_id) else {
+            println!("  block {block_id}: <missing>");
+            return;
+        };
+        let borrowed = node_rc.borrow();
+        for &ins_idx in &borrowed.instruction {
+            if let Some(insn) = instructions.get(ins_idx) {
+                let addr = insn.address();
+                let mnemonic = insn.mnemonic().unwrap_or("<unknown>");
+                let operands = insn.op_str().unwrap_or("");
+                if operands.is_empty() {
+                    println!("  {addr:#010x}: {mnemonic}");
+                } else {
+                    println!("  {addr:#010x}: {mnemonic} {operands}");
+                }
+            }
+        }
+    }
+
+    fn dump_natural_loop_edge(
+        instructions: &Instructions<'insn>,
+        cache: &HashMap<usize, Rc<RefCell<BasicBlockNode<'insn>>>>,
+        cfg: &CFG,
+        header: usize,
+        tail: usize,
+    ) {
+        let loop_blocks = Self::natural_loop_block_ids(cfg, header, tail);
+        println!("Natural loop (back edge {tail} -> {header})");
+        println!("--------------------------------");
+        println!("blocks: {loop_blocks:?}");
+        for block_id in &loop_blocks {
+            println!("block {block_id}:");
+            Self::print_block_instructions(instructions, cache, *block_id);
+        }
+        println!("--------------------------------");
+    }
+
     pub fn start_decomplier(&mut self) {
         let instructions = Rc::clone(&self.instructions);
         let address_to_index = Rc::clone(&self.address_to_index);
@@ -346,6 +448,104 @@ impl<'insn> Decomplier<'insn> {
             Self::update_coverage(&cache, &mut seen_blocks, &mut seen_ins);
             self.roots.push(block);
         }
-        self.print_basic_blocks();
+        // self.print_basic_blocks();
+
+
+        // println!("cache: {:#?}", cache);
+
+
+
+
+
+        let mut dom: HashMap<usize, HashSet<usize>> = HashMap::new();
+        let cfg = Self::build_successor_predecessor(&cache);
+        // println!("CFG: {:#?}", cfg);
+        let all_nodes: HashSet<_> = cfg.successors.keys().copied().collect();
+
+        const ENTRY: usize = 0;
+        if all_nodes.is_empty() {
+            return;
+        }
+
+        for &node in &all_nodes {
+            if node == ENTRY {
+                dom.insert(node, HashSet::from([ENTRY]));
+            } else {
+                dom.insert(node, all_nodes.clone());
+            }
+        }
+
+        let mut node_order: Vec<usize> = all_nodes.iter().copied().collect();
+        node_order.sort_unstable();
+
+        loop {
+            let mut changed = false;
+
+            for &node in &node_order {
+                if node == ENTRY {
+                    continue;
+                }
+
+                let preds = match cfg.predecessors.get(&node) {
+                    Some(p) => p,
+                    None => continue,
+                };
+                if preds.is_empty() {
+                    continue;
+                }
+
+                let mut new_dom = all_nodes.clone();
+                for p in preds {
+                    let pred_dom = dom
+                        .get(p)
+                        .expect("predecessor block should have a dominator set");
+                    new_dom = new_dom
+                        .intersection(pred_dom)
+                        .copied()
+                        .collect();
+                }
+
+                new_dom.insert(node);
+
+                if dom.get(&node) != Some(&new_dom) {
+                    dom.insert(node, new_dom);
+                    changed = true;
+                }
+            }
+
+            if !changed {
+                break;
+            }
+        }
+
+        println!("Dominator tree: {:#?}", dom);
+        println!("--------------------------------");
+
+        let mut seen_back_edges = HashSet::new();
+
+        for &block in &node_order {
+            if block == ENTRY {
+                continue;
+            }
+            let Some(succs) = cfg.successors.get(&block) else {
+                continue;
+            };
+            for &succ in succs {
+                if dom
+                    .get(&block)
+                    .is_some_and(|d| d.contains(&succ))
+                    && seen_back_edges.insert((succ, block))
+                {
+                    println!("back edge: tail {block} -> header {succ}");
+                    Self::dump_natural_loop_edge(
+                        &instructions,
+                        &cache,
+                        &cfg,
+                        succ,
+                        block,
+                    );
+                }
+            }
+        }
     }
 }
