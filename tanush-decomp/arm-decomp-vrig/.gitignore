@@ -1,0 +1,15 @@
+# Rust build output
+/target/
+
+# Local analysis/debug artifacts
+/log
+/log[0-9]*
+
+# Editor and OS noise
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.orig
