@@ -1,7 +1,9 @@
+#![allow(non_camel_case_types)]
 
 // https://man7.org/linux/man-pages/man5/elf.5.html
 // https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html#elfid
 // https://sites.uclouvain.be/SystInfo/usr/include/elf.h.html
+use crate::dissam_capstone::DecomplierCapstone;
 use crate::elf_sectionheaders::{Elf32_Shdr, Elf64_Shdr};
 
 pub type ElfNAddr = u64;
@@ -14,7 +16,6 @@ pub type ElfNSWord = i32;
 pub type ElfNWord = u32;
 pub type ElfNSXWord = i64;
 pub type ElfNXWord = u64;
-
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ElfFileType {
@@ -284,6 +285,7 @@ pub enum EMMachine {
     EM_TPC,
     EM_SNP1K,
     EM_ST200,
+    EM_ARM_AARCH64,
     Unknown(u16),
 }
 
@@ -372,6 +374,7 @@ impl EMMachine {
             98 => EMMachine::EM_TPC,
             99 => EMMachine::EM_SNP1K,
             100 => EMMachine::EM_ST200,
+            183 => EMMachine::EM_ARM_AARCH64,
             x => EMMachine::Unknown(x),
         }
     }
@@ -459,13 +462,11 @@ impl EMMachine {
             EMMachine::EM_TPC => "Tenor Network TPC processor",
             EMMachine::EM_SNP1K => "Trebia SNP 1000 processor",
             EMMachine::EM_ST200 => "STMicroelectronics ST200 microcontroller",
+            EMMachine::EM_ARM_AARCH64 => "ARM AArch64",
             EMMachine::Unknown(_) => "Invalid Machine Type",
         }
     }
 }
-
-
-
 
 // /* Processor specific flags for the ELF header e_flags field.  */
 // #define EF_ARM_RELEXEC                0x01
@@ -498,7 +499,6 @@ pub enum ElfFlagsARM {
     EF_ARM_MAVERICK_FLOAT = 0x800,
 }
 
-
 pub const EI_NIDENT: usize = 16;
 
 pub struct ElfNEhdr {
@@ -522,7 +522,6 @@ pub struct ElfNEhdr {
     pub e_shstrndx: u16,
 }
 
-
 pub struct Elf32_Phdr {
     pub p_type: ElfPhdrType,
     pub p_offset: ElfNOff,
@@ -544,7 +543,6 @@ pub struct Elf64_Phdr {
     pub p_memsz: u64,
     pub p_align: u64,
 }
-
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum ElfPhdrType {
@@ -660,22 +658,23 @@ impl ElfPhdrType {
 // #define PT_HIOS                0x6fffffff        /* End of OS-specific */
 // #define PT_LOPROC        0x70000000        /* Start of processor-specific */
 // #define PT_HIPROC        0x7fffffff        /* End of processor-specific */
-
-
-
 impl ElfNEhdr {
-
     fn validate_elf_header(&self) {
-        if self.e_ident[0] != 0x7F ||
-           self.e_ident[1] != 0x45 ||
-           self.e_ident[2] != 0x4C ||
-           self.e_ident[3] != 0x46 {
-            println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
-                     self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]);
+        if self.e_ident[0] != 0x7F
+            || self.e_ident[1] != 0x45
+            || self.e_ident[2] != 0x4C
+            || self.e_ident[3] != 0x46
+        {
+            println!(
+                "ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
+                self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]
+            );
             panic!("Not an ELF file: Invalid Magic Number");
         }
-        println!("ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
-                 self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]);
+        println!(
+            "ELF file: Magic Number: 0x{:02X}{:02X}{:02X}{:02X}",
+            self.e_ident[0], self.e_ident[1], self.e_ident[2], self.e_ident[3]
+        );
 
         match self.class {
             ElfClass::NONE | ElfClass::Unknown(_) => panic!("Not an ELF file: Invalid Class"),
@@ -704,9 +703,6 @@ impl ElfNEhdr {
         }
     }
 
-
-
-
     fn validate_elf_type(&self) {
         println!("ELF file: Type: {}", self.e_type.type_name());
     }
@@ -724,7 +720,6 @@ impl ElfNEhdr {
             ElfVersion::CURRENT => println!("ELF file: Version: Current"),
         }
     }
-
 
     // /* Processor specific flags for the ELF header e_flags field.  */
     // #define EF_ARM_RELEXEC                0x01
@@ -778,6 +773,56 @@ impl ElfNEhdr {
         }
     }
 
+    fn disassemble_exec_sections32(&self, file_bytes: &[u8], sections: &[Elf32_Shdr]) {
+        if sections.is_empty() {
+            return;
+        }
+        let decomplier = DecomplierCapstone::new_arm32();
+        for (idx, section) in sections.iter().enumerate() {
+            // SHF_EXECINSTR = 0x4
+            if section.sh_flags & 0x4 == 0 || section.sh_size == 0 {
+                continue;
+            }
+            println!(
+                "ELF file: Section {} (index {}) is executable",
+                section.sh_name, idx
+            );
+            // capstone wrapper
+            decomplier.dissamble_section32bit(
+                file_bytes,
+                section.sh_offset as u64,
+                section.sh_addr as u64,
+                section.sh_size,
+                section.sh_size,
+            );
+        }
+    }
+
+    fn disassemble_exec_sections64(&self, file_bytes: &[u8], sections: &[Elf64_Shdr]) {
+        if sections.is_empty() {
+            return;
+        }
+        let decomplier = DecomplierCapstone::new_arm64();
+        for (idx, section) in sections.iter().enumerate() {
+            // SHF_EXECINSTR = 0x4
+            if section.sh_flags & 0x4 == 0 || section.sh_size == 0 {
+                continue;
+            }
+            println!(
+                "ELF file: Section {} (index {}) is executable",
+                section.sh_name, idx
+            );
+            // capstone wrapper
+            decomplier.dissamble_section64bit(
+                file_bytes,
+                section.sh_offset,
+                section.sh_addr,
+                section.sh_size,
+                section.sh_size,
+            );
+        }
+    }
+
     pub fn new() -> Self {
         Self {
             e_ident: [0; EI_NIDENT],
@@ -803,8 +848,10 @@ impl ElfNEhdr {
 
     pub fn read_bytes(&mut self, bytes: &[u8]) -> Self {
         let e_type_raw = u16::from_le_bytes(bytes[EI_NIDENT..EI_NIDENT + 2].try_into().unwrap());
-        let e_machine_raw = u16::from_le_bytes(bytes[EI_NIDENT + 2..EI_NIDENT + 4].try_into().unwrap());
-        let e_version_raw = u32::from_le_bytes(bytes[EI_NIDENT + 4..EI_NIDENT + 8].try_into().unwrap());
+        let e_machine_raw =
+            u16::from_le_bytes(bytes[EI_NIDENT + 2..EI_NIDENT + 4].try_into().unwrap());
+        let e_version_raw =
+            u32::from_le_bytes(bytes[EI_NIDENT + 4..EI_NIDENT + 8].try_into().unwrap());
         Self {
             e_ident: bytes[0..EI_NIDENT].try_into().unwrap(),
             class: ElfClass::from_raw(bytes[4]),
@@ -814,16 +861,28 @@ impl ElfNEhdr {
             e_type: ElfFileType::from_raw(e_type_raw),
             e_machine: EMMachine::from_raw(e_machine_raw),
             e_version: ElfVersion::from_raw((e_version_raw & 0xff) as u8),
-            e_entry: ElfNAddr::from_le_bytes(bytes[EI_NIDENT + 8..EI_NIDENT + 16].try_into().unwrap()),
-            e_phoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT + 16..EI_NIDENT + 24].try_into().unwrap()),
-            e_shoff: ElfNOff::from_le_bytes(bytes[EI_NIDENT + 24..EI_NIDENT + 32].try_into().unwrap()),
+            e_entry: ElfNAddr::from_le_bytes(
+                bytes[EI_NIDENT + 8..EI_NIDENT + 16].try_into().unwrap(),
+            ),
+            e_phoff: ElfNOff::from_le_bytes(
+                bytes[EI_NIDENT + 16..EI_NIDENT + 24].try_into().unwrap(),
+            ),
+            e_shoff: ElfNOff::from_le_bytes(
+                bytes[EI_NIDENT + 24..EI_NIDENT + 32].try_into().unwrap(),
+            ),
             e_flags: u32::from_le_bytes(bytes[EI_NIDENT + 32..EI_NIDENT + 36].try_into().unwrap()),
             e_ehsize: u16::from_le_bytes(bytes[EI_NIDENT + 36..EI_NIDENT + 38].try_into().unwrap()),
-            e_phentsize: u16::from_le_bytes(bytes[EI_NIDENT + 38..EI_NIDENT + 40].try_into().unwrap()),
+            e_phentsize: u16::from_le_bytes(
+                bytes[EI_NIDENT + 38..EI_NIDENT + 40].try_into().unwrap(),
+            ),
             e_phnum: u16::from_le_bytes(bytes[EI_NIDENT + 40..EI_NIDENT + 42].try_into().unwrap()),
-            e_shentsize: u16::from_le_bytes(bytes[EI_NIDENT + 42..EI_NIDENT + 44].try_into().unwrap()),
+            e_shentsize: u16::from_le_bytes(
+                bytes[EI_NIDENT + 42..EI_NIDENT + 44].try_into().unwrap(),
+            ),
             e_shnum: u16::from_le_bytes(bytes[EI_NIDENT + 44..EI_NIDENT + 46].try_into().unwrap()),
-            e_shstrndx: u16::from_le_bytes(bytes[EI_NIDENT + 46..EI_NIDENT + 48].try_into().unwrap()),
+            e_shstrndx: u16::from_le_bytes(
+                bytes[EI_NIDENT + 46..EI_NIDENT + 48].try_into().unwrap(),
+            ),
         }
     }
 
@@ -837,11 +896,20 @@ impl ElfNEhdr {
         println!("ELF file: Section Header Offset: 0x{:016X}", self.e_shoff);
         self.validate_elf_flags();
         println!("ELF file: header size: 0x{:02X}", self.e_ehsize);
-        println!("ELF file: program header entrysize: 0x{:02X}", self.e_phentsize);
+        println!(
+            "ELF file: program header entrysize: 0x{:02X}",
+            self.e_phentsize
+        );
         println!("ELF file: program header count: 0x{:02X}", self.e_phnum);
-        println!("ELF file: section header entrysize: 0x{:02X}", self.e_shentsize);
+        println!(
+            "ELF file: section header entrysize: 0x{:02X}",
+            self.e_shentsize
+        );
         println!("ELF file: section header count: 0x{:02X}", self.e_shnum);
-        println!("ELF file: section header string table index: 0x{:02X}", self.e_shstrndx);
+        println!(
+            "ELF file: section header string table index: 0x{:02X}",
+            self.e_shstrndx
+        );
         println!();
 
         // program header parsing
@@ -853,9 +921,6 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
-                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
-                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
-                }
             }
         } else if self.class == ElfClass::CLASS64 {
             let mut program_headers: Vec<Elf64_Phdr> = Vec::new();
@@ -865,12 +930,8 @@ impl ElfNEhdr {
                 phdr.print(i);
                 program_headers.push(phdr);
                 offset += self.e_phentsize as usize;
-                if phdr.p_type == ElfPhdrType::PT_LOAD as u32 {
-                    Decomplier::decomplier_load_section(phdr.p_vaddr, phdr.p_memsz, phdr.p_filesz);
-                }
             }
         }
-
 
         // section header parsing
         if self.class == ElfClass::CLASS32 {
@@ -880,8 +941,9 @@ impl ElfNEhdr {
                 let shdr = Elf32_Shdr::read_bytes(file_bytes, offset);
                 shdr.print(i, file_bytes);
                 section_headers.push(shdr);
-                offset += self.e_shentsize as usize;d
+                offset += self.e_shentsize as usize;
             }
+            self.disassemble_exec_sections32(file_bytes, &section_headers);
         } else if self.class == ElfClass::CLASS64 {
             let mut section_headers: Vec<Elf64_Shdr> = Vec::new();
             let mut offset = self.e_shoff as usize;
@@ -891,6 +953,7 @@ impl ElfNEhdr {
                 section_headers.push(shdr);
                 offset += self.e_shentsize as usize;
             }
+            self.disassemble_exec_sections64(file_bytes, &section_headers);
         }
     }
 }

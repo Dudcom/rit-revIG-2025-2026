@@ -1,4 +1,3 @@
-
 use crate::elf_header::{Elf32_Phdr, Elf64_Phdr, ElfNAddr, ElfNOff, ElfPhdrType};
 
 impl Elf32_Phdr {
@@ -7,9 +6,12 @@ impl Elf32_Phdr {
         let p_type_raw = u32::from_le_bytes(bytes[start..start + 4].try_into().unwrap());
         Self {
             p_type: ElfPhdrType::from_raw(p_type_raw),
-            p_offset: u32::from_le_bytes(bytes[start + 4..start + 8].try_into().unwrap()) as ElfNOff,
-            p_vaddr: u32::from_le_bytes(bytes[start + 8..start + 12].try_into().unwrap()) as ElfNAddr,
-            p_paddr: u32::from_le_bytes(bytes[start + 12..start + 16].try_into().unwrap()) as ElfNAddr,
+            p_offset: u32::from_le_bytes(bytes[start + 4..start + 8].try_into().unwrap())
+                as ElfNOff,
+            p_vaddr: u32::from_le_bytes(bytes[start + 8..start + 12].try_into().unwrap())
+                as ElfNAddr,
+            p_paddr: u32::from_le_bytes(bytes[start + 12..start + 16].try_into().unwrap())
+                as ElfNAddr,
             p_filesz: u32::from_le_bytes(bytes[start + 16..start + 20].try_into().unwrap()),
             p_memsz: u32::from_le_bytes(bytes[start + 20..start + 24].try_into().unwrap()),
             p_flags: u32::from_le_bytes(bytes[start + 24..start + 28].try_into().unwrap()),
@@ -37,13 +39,27 @@ impl Elf32_Phdr {
 
     pub fn print(&self, index: usize) {
         println!("Program Header {}:", index);
-        println!("  Type: {} (0x{:08X})", self.p_type.type_name(), self.p_type.as_raw());
+        println!(
+            "  Type: {} (0x{:08X})",
+            self.p_type.type_name(),
+            self.p_type.as_raw()
+        );
         println!("  Offset: 0x{:016X}", self.p_offset);
         println!("  Virtual Address: 0x{:016X}", self.p_vaddr);
         println!("  Physical Address: 0x{:016X}", self.p_paddr);
-        println!("  File Size: 0x{:08X} ({} bytes)", self.p_filesz, self.p_filesz);
-        println!("  Memory Size: 0x{:08X} ({} bytes)", self.p_memsz, self.p_memsz);
-        println!("  Flags: {} (0x{:08X})", self.get_flags_string(), self.p_flags);
+        println!(
+            "  File Size: 0x{:08X} ({} bytes)",
+            self.p_filesz, self.p_filesz
+        );
+        println!(
+            "  Memory Size: 0x{:08X} ({} bytes)",
+            self.p_memsz, self.p_memsz
+        );
+        println!(
+            "  Flags: {} (0x{:08X})",
+            self.get_flags_string(),
+            self.p_flags
+        );
         println!("  Align: 0x{:08X}", self.p_align);
     }
 }
@@ -84,13 +100,27 @@ impl Elf64_Phdr {
 
     pub fn print(&self, index: usize) {
         println!("Program Header {}:", index);
-        println!("  Type: {} (0x{:08X})", self.p_type.type_name(), self.p_type.as_raw());
-        println!("  Flags: {} (0x{:08X})", self.get_flags_string(), self.p_flags);
+        println!(
+            "  Type: {} (0x{:08X})",
+            self.p_type.type_name(),
+            self.p_type.as_raw()
+        );
+        println!(
+            "  Flags: {} (0x{:08X})",
+            self.get_flags_string(),
+            self.p_flags
+        );
         println!("  Offset: 0x{:016X}", self.p_offset);
         println!("  Virtual Address: 0x{:016X}", self.p_vaddr);
         println!("  Physical Address: 0x{:016X}", self.p_paddr);
-        println!("  File Size: 0x{:016X} ({} bytes)", self.p_filesz, self.p_filesz);
-        println!("  Memory Size: 0x{:016X} ({} bytes)", self.p_memsz, self.p_memsz);
+        println!(
+            "  File Size: 0x{:016X} ({} bytes)",
+            self.p_filesz, self.p_filesz
+        );
+        println!(
+            "  Memory Size: 0x{:016X} ({} bytes)",
+            self.p_memsz, self.p_memsz
+        );
         println!("  Align: 0x{:016X}", self.p_align);
         println!();
     }
